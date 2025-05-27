@@ -8,10 +8,7 @@ const MAX_PAGES = 20; // Safety limit
 const standardFields = [
   { key: 'firstName', label: 'First Name', type: 'text' },
   { key: 'lastName', label: 'Last Name', type: 'text' },
-  { key: 'title', label: 'Title', type: 'text' },
   { key: 'address1', label: 'Address 1', type: 'text' },
-  { key: 'address_line_2', label: 'Address 2', type: 'text' },
-  { key: 'address_line_3', label: 'Address 3', type: 'text' },
   { key: 'postalCode', label: 'Postcode', type: 'text' },
   { key: 'phone', label: 'Telephone', type: 'text' },
   { key: 'email', label: 'Email', type: 'email' },
@@ -27,6 +24,9 @@ const customFields = [
   { key: 'renewal_reminder', label: 'Renewal Reminder', type: 'select', options: ['No', 'Membership Secretary', 'Member', 'Both'] },
   { key: 'marketing_email_consent', label: 'Marketing and Email Consent', type: 'select', options: ['Yes', 'No'] },
   { key: 'gift_aid', label: 'Gift Aid', type: 'radio', options: ['Yes', 'No'] },
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'address2', label: 'Address 2', type: 'text' },
+  { key: 'address3', label: 'Address 3', type: 'text' },
 ];
 
 // map GHL field-id  -> your form key
@@ -36,8 +36,12 @@ const FIELD_MAP: Record<string, string> = {
   w52V1FONYrhH0LUqDjBs: 'membership_start_date',
   cWMPNiNAfReHOumOhBB2: 'renewal_date',
   ojKOz9HxslwVJaBMqcAF: 'renewal_reminder',
-  vJKGn7dzbGmmLUfzp0KY: 'marketing_email_consent',
+  vJKGn7dzbGmmLUfzp0KY: 'standing_order',
   ABzFclt09Z30eBalbPKH: 'gift_aid',
+  YvpMtidXnXFqJnii5sqH: 'marketing_email_consent',
+  xNIBnbcu4NJ008JLUWGF: 'title',
+  PEyv7RkguJ3IwYQdQlkR: 'address2',
+  dTKWIDeFBg9MI1MQ65vi: 'address3',
   // ... add the rest as needed ...
 };
 
@@ -101,6 +105,28 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   return allContacts;
 }
 
+const fieldOrder = [
+  { key: 'firstName', type: 'standard' },
+  { key: 'lastName', type: 'standard' },
+  { key: 'title', type: 'custom' },
+  { key: 'address1', type: 'standard' },
+  { key: 'address2', type: 'custom' },
+  { key: 'address3', type: 'custom' },
+  { key: 'postalCode', type: 'standard' },
+  { key: 'phone', type: 'standard' },
+  { key: 'email', type: 'standard' },
+  { key: 'source', type: 'standard' },
+  { key: 'membership_start_date', type: 'custom' },
+  { key: 'membership_type', type: 'custom' },
+  { key: 'single_or_double_membership', type: 'custom' },
+  { key: 'standing_order', type: 'custom' },
+  { key: 'renewal_date', type: 'custom' },
+  { key: 'renewal_reminder', type: 'custom' },
+  { key: 'marketing_email_consent', type: 'custom' },
+  { key: 'gift_aid', type: 'custom' },
+  { key: 'notes', type: 'notes' },
+];
+
 export default function Home() {
   const [search, setSearch] = useState('');
   const [allContacts, setAllContacts] = useState<any[]>([]);
@@ -110,6 +136,7 @@ export default function Home() {
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [form, setForm] = useState<any>({});
   const [note, setNote] = useState('');
+  const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -162,35 +189,35 @@ export default function Home() {
     );
   }, [search, allContacts]);
 
-  // Fetch contacts by letter (client-side)
-  const handleAlphaClick = (letter: string) => {
-    setSearch(letter);
-  };
-
   // Fetch contact details and note when selectedContact changes
   useEffect(() => {
     if (!selectedContact) {
       setForm({});
       setNote('');
+      setNotes([]);
+      setSaveOk(false);
+      setSaveError(null);
       return;
     }
     setDetailsLoading(true);
     setDetailsError(null);
+    setSaveOk(false);      // reset Saved! message
+    setSaveError(null);    // reset error message
     Promise.all([
       fetch(`/api/contact/${selectedContact.id}`).then(async r => {
         if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch contact');
         return r.json();
       }),
-      fetch(`/api/contact/${selectedContact.id}/note`).then(async r => {
-        if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch note');
+      fetch(`/api/contact/${selectedContact.id}/notes`).then(async r => {
+        if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch notes');
         return r.json();
       }),
     ])
-      .then(([contact, noteData]) => {
+      .then(([contact, notesData]) => {
         if (contact.error) throw new Error(contact.error);
         // Merge custom fields into form state
         setForm({ ...contact, ...flattenCustomFields(contact) });
-        setNote(noteData?.note?.body || '');
+        setNotes(notesData?.notes || []);
       })
       .catch(err => setDetailsError(err.message))
       .finally(() => setDetailsLoading(false));
@@ -238,12 +265,27 @@ export default function Home() {
         throw new Error(errBody?.error || `HTTP ${res.status}`);
       }
   
-      /* 2 – note (ignore empty response) */
-      await fetch(`/api/contact/${selectedContact.id}/note`, {
-        method : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ body: note }),
-      });
+      /* 2 – note (only if there's a new note) */
+      if (note.trim()) {
+        const noteRes = await fetch(`/api/contact/${selectedContact.id}/note`, {
+          method : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body   : JSON.stringify({ body: note }),
+        });
+        
+        if (!noteRes.ok) {
+          const errBody = await safeJson(noteRes);
+          throw new Error(errBody?.error || `HTTP ${noteRes.status}`);
+        }
+
+        // Refresh notes after adding new one
+        const notesRes = await fetch(`/api/contact/${selectedContact.id}/notes`);
+        if (notesRes.ok) {
+          const notesData = await notesRes.json();
+          setNotes(notesData.notes || []);
+        }
+        setNote(''); // Clear the note input
+      }
   
       setSaveOk(true);
     } catch (err: any) {
@@ -268,19 +310,6 @@ export default function Home() {
           aria-label="Search contacts"
           disabled={contactsLoading}
         />
-        <div className="flex flex-wrap gap-2 mb-4">
-          {alphabet.map(letter => (
-            <button
-              key={letter}
-              className="px-3 py-1 rounded bg-black text-white text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label={`Show contacts starting with ${letter}`}
-              onClick={() => handleAlphaClick(letter)}
-              disabled={contactsLoading}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
         {contactsLoading && <div className="text-lg text-blue-700 mb-2">Loading all contacts and membership info...</div>}
         {contactsError && <div className="text-lg text-red-700 mb-2">{contactsError}</div>}
         <div className="mb-6">
@@ -303,7 +332,6 @@ export default function Home() {
               </option>
             ))}
           </select>
-          <div className="text-sm text-gray-600 mt-2">Only contacts with a Membership Type (not "None") are shown.</div>
         </div>
       </div>
       {selectedContact && (
@@ -311,79 +339,115 @@ export default function Home() {
           <h2 className="text-2xl font-bold mb-4">Edit Contact Details</h2>
           {detailsLoading && <div className="text-lg text-blue-700 mb-2">Loading details...</div>}
           {detailsError && <div className="text-lg text-red-700 mb-2">{detailsError}</div>}
-          {standardFields.map(field => (
-            <div className="mb-4" key={field.key}>
-              <label className="block font-semibold mb-1" htmlFor={field.key}>{field.label}</label>
-              <input
-                id={field.key}
-                type={field.type}
-                className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                value={form[field.key] || ''}
-                onChange={e => setForm({ ...form, [field.key]: e.target.value })}
-                aria-label={field.label}
-                disabled={detailsLoading}
-              />
-            </div>
-          ))}
-          {customFields.map(field => (
-            <div className="mb-4" key={field.key}>
-              <label className="block font-semibold mb-1" htmlFor={field.key}>{field.label}</label>
-              {field.type === 'text' || field.type === 'date' ? (
-                <input
-                  id={field.key}
-                  type={field.type}
-                  className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                  value={form[field.key] || ''}
-                  onChange={e => setForm({ ...form, [field.key]: e.target.value })}
-                  aria-label={field.label}
-                  disabled={detailsLoading}
-                />
-              ) : field.type === 'select' ? (
-                <select
-                  id={field.key}
-                  className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                  value={form[field.key] || ''}
-                  onChange={e => setForm({ ...form, [field.key]: e.target.value })}
-                  aria-label={field.label}
-                  disabled={detailsLoading}
-                >
-                  <option value="">-- Select --</option>
-                  {field.options?.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              ) : field.type === 'radio' ? (
-                <div className="flex gap-6">
-                  {field.options?.map(opt => (
-                    <label key={opt} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={field.key}
-                        value={opt}
-                        checked={form[field.key] === opt}
-                        onChange={() => setForm({ ...form, [field.key]: opt })}
-                        aria-label={opt}
-                        disabled={detailsLoading}
-                      />
-                      {opt}
-                    </label>
-                  ))}
+          {fieldOrder.map(field => {
+            if (field.type === 'standard') {
+              const f = standardFields.find(sf => sf.key === field.key);
+              if (!f) return null;
+              return (
+                <div className="mb-4" key={f.key}>
+                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
+                  <input
+                    id={f.key}
+                    type={f.type}
+                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
+                    value={form[f.key] || ''}
+                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                    aria-label={f.label}
+                    disabled={detailsLoading}
+                  />
                 </div>
-              ) : null}
-            </div>
-          ))}
-          <div className="mb-6">
-            <label className="block font-semibold mb-1" htmlFor="note">Notes</label>
-            <textarea
-              id="note"
-              className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400 text-xl"
-              rows={4}
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              aria-label="Notes"
-              disabled={detailsLoading}
-            />
-          </div>
+              );
+            }
+            if (field.type === 'custom') {
+              const f = customFields.find(cf => cf.key === field.key);
+              if (!f) return null;
+              return (
+                <div className="mb-4" key={f.key}>
+                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
+                  {f.type === 'text' || f.type === 'date' ? (
+                    <input
+                      id={f.key}
+                      type={f.type}
+                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
+                      value={form[f.key] || ''}
+                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      aria-label={f.label}
+                      disabled={detailsLoading}
+                    />
+                  ) : f.type === 'select' ? (
+                    <select
+                      id={f.key}
+                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
+                      value={form[f.key] || ''}
+                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      aria-label={f.label}
+                      disabled={detailsLoading}
+                    >
+                      <option value="">-- Select --</option>
+                      {f.options?.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : f.type === 'radio' ? (
+                    <div className="flex gap-6">
+                      {f.options?.map(opt => (
+                        <label key={opt} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name={f.key}
+                            value={opt}
+                            checked={form[f.key] === opt}
+                            onChange={() => setForm({ ...form, [f.key]: opt })}
+                            aria-label={opt}
+                            disabled={detailsLoading}
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            }
+            if (field.type === 'notes') {
+              return (
+                <div className="mb-6" key="notes">
+                  <label className="block font-semibold mb-1" htmlFor="note">Add New Note</label>
+                  <textarea
+                    id="note"
+                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400 text-xl mb-4"
+                    rows={4}
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    aria-label="New note"
+                    disabled={detailsLoading}
+                    placeholder="Type your new note here..."
+                  />
+                  
+                  <div className="mt-6">
+                    <h3 className="text-xl font-semibold mb-2">Previous Notes</h3>
+                    <div className="max-h-96 overflow-y-auto border-2 border-black rounded-lg p-4">
+                      {notes.length === 0 ? (
+                        <p className="text-gray-600 italic">No previous notes</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {notes.map((note) => (
+                            <div key={note.id} className="border-b border-gray-300 pb-4 last:border-0">
+                              <p className="whitespace-pre-wrap">{note.body}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {new Date(note.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })}
           <button
             type="button"
             onClick={handleUpdate}

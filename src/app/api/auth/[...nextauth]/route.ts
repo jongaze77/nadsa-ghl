@@ -1,18 +1,17 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { Buffer } from 'buffer';
+
+const prisma = new PrismaClient();
 
 // Debug: Print environment variables to verify loading
 console.log('DEBUG ENV', {
-  ADMIN_USERNAME: process.env.ADMIN_USERNAME,
-  ADMIN_PASSWORD_B64: process.env.ADMIN_PASSWORD_B64,
   FOO: process.env.FOO,
 });
 
 // Debug environment variables
 console.log('All environment variables:', {
-  ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? '***' : undefined,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
 });
@@ -27,55 +26,14 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          console.log('Missing credentials');
           return null;
         }
-
-        const validUsername = process.env.ADMIN_USERNAME;
-        const validPassword = process.env.ADMIN_PASSWORD_B64
-          ? Buffer.from(process.env.ADMIN_PASSWORD_B64, 'base64').toString('utf8')
-          : undefined;
-
-        // Debug logging
-        console.log('Environment variables:', {
-          hasUsername: !!validUsername,
-          hasPassword: !!validPassword,
-          usernameLength: validUsername?.length,
-          passwordLength: validPassword?.length,
-          providedUsername: credentials.username,
-          providedPassword: credentials.password,
-          validUsername,
-          validPasswordLength: validPassword?.length,
+        const user = await prisma.user.findUnique({
+          where: { username: credentials.username },
         });
-
-        if (!validUsername || !validPassword) {
-          console.error('Admin credentials not configured', {
-            hasUsername: !!validUsername,
-            hasPassword: !!validPassword,
-            usernameLength: validUsername?.length,
-            passwordLength: validPassword?.length,
-          });
-          return null;
+        if (user && await bcrypt.compare(credentials.password, user.password)) {
+          return { id: user.id, name: user.username, role: (user as any).role };
         }
-
-        const isValid = credentials.username === validUsername &&
-          await bcrypt.compare(credentials.password, validPassword);
-
-        console.log('Login check:', {
-          usernameMatch: credentials.username === validUsername,
-          passwordMatch: await bcrypt.compare(credentials.password, validPassword),
-          isValid
-        });
-
-        if (isValid) {
-          return {
-            id: '1',
-            name: credentials.username,
-            email: `${credentials.username}@example.com`,
-          };
-        }
-
-        console.log('Login failed - invalid credentials');
         return null;
       }
     })
@@ -95,7 +53,7 @@ const handler = NextAuth({
       if (user) {
         token.id = user.id;
         token.name = user.name;
-        token.email = user.email;
+        (token as any).role = (user as any).role;
       }
       return token;
     },
@@ -103,7 +61,7 @@ const handler = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.name = token.name;
-        session.user.email = token.email;
+        (session.user as any).role = (token as any).role;
       }
       return session;
     }

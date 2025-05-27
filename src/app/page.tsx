@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 const MAX_PAGES = 20; // Safety limit
@@ -128,6 +129,7 @@ const fieldOrder = [
 ];
 
 export default function Home() {
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [allContacts, setAllContacts] = useState<any[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
@@ -297,7 +299,17 @@ export default function Home() {
   
   return (
     <main className="bg-white min-h-screen p-6 flex flex-col items-center text-black">
-      <h1 className="text-4xl font-bold mb-6" style={{ letterSpacing: 2 }}>GHL Client Manager</h1>
+      <div className="w-full max-w-2xl mb-4 flex justify-between items-center">
+        <h1 className="text-4xl font-bold" style={{ letterSpacing: 2 }}>GHL Client Manager</h1>
+        {session && (
+          <button
+            onClick={() => signOut()}
+            className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            Sign Out
+          </button>
+        )}
+      </div>
       <div className="w-full max-w-2xl mb-8">
         <label htmlFor="search" className="block text-lg font-semibold mb-2">Search Contacts</label>
         <input

@@ -1,0 +1,3 @@
+# ignore Prisma client + build artefacts
+src/generated/**
+.next/**

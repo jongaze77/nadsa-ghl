@@ -1,11 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
-const MAX_PAGES = 20; // Safety limit
 
 const standardFields = [
   { key: 'firstName', label: 'First Name', type: 'text' },
@@ -88,7 +87,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let page = 1;
   let hasMore = true;
   const limit = 100;
-  let seenIds = new Set();
+  const seenIds = new Set();
 
   while (hasMore && page <= 20) {
     const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
@@ -150,8 +149,6 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string|null>(null);
   const [saveOk, setSaveOk] = useState(false);
-
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   useEffect(() => {
     if (!session) {

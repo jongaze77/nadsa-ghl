@@ -19,7 +19,6 @@ interface ContactsResponse {
 
 function ContactsPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +56,7 @@ function ContactsPageContent() {
 
   useEffect(() => {
     fetchContacts();
-  }, [pagination.page, search, membershipType]);
+  }, [pagination.page, search, membershipType, fetchContacts]);
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));

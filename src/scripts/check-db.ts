@@ -1,28 +1,19 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-async function checkDatabase() {
+async function main() {
   try {
-    // Check if we can connect to the database
-    await prisma.$connect();
-    console.log('Successfully connected to database');
-
-    // Count contacts
-    const contactCount = await prisma.contact.count();
-    console.log(`Total contacts in database: ${contactCount}`);
-
-    // Get a sample contact if any exist
-    if (contactCount > 0) {
-      const sampleContact = await prisma.contact.findFirst();
-      console.log('Sample contact:', JSON.stringify(sampleContact, null, 2));
+    const contacts = await prisma.contact.findMany();
+    console.log(`Found ${contacts.length} contacts in the database`);
+    
+    for (const contact of contacts) {
+      console.log(`Contact: ${contact.id} - ${contact.name || 'No name'}`);
     }
-
   } catch (error) {
     console.error('Error checking database:', error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-checkDatabase(); 
+main(); 

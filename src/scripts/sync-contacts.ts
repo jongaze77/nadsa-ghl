@@ -1,46 +1,40 @@
 require('dotenv').config({ path: '.env.local' });
-const { PrismaClient } = require('@prisma/client');
-const { fetchAllContactsFromGHL, mapGHLContactToPrisma } = require('../lib/ghl-api.js');
+import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '../lib/ghl-api';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-async function syncContacts() {
+async function main() {
   try {
     console.log('Starting contact sync...');
-    let page = 1;
-    let hasMore = true;
-    let totalSynced = 0;
+    const contacts = await fetchAllContactsFromGHL();
+    
+    for (const contact of contacts.contacts) {
+      const prismaContact = mapGHLContactToPrisma(contact);
+      const existingContact = await prisma.contact.findUnique({
+        where: { id: contact.id }
+      });
 
-    while (hasMore) {
-      console.log(`Fetching page ${page}...`);
-      const response = await fetchAllContactsFromGHL(page);
-      const contacts = response.contacts || [];
+      const contactData = {
+        ...prismaContact,
+        id: contact.id,
+        customFields: prismaContact.customFields as Prisma.InputJsonValue
+      };
 
-      if (contacts.length === 0) {
-        hasMore = false;
-        continue;
-      }
-
-      console.log(`Processing ${contacts.length} contacts...`);
-
-      for (const ghlContact of contacts) {
-        const contactData = mapGHLContactToPrisma(ghlContact);
-        
-        await prisma.contact.upsert({
-          where: { id: contactData.id },
-          update: contactData,
-          create: contactData,
+      if (existingContact) {
+        await prisma.contact.update({
+          where: { id: contact.id },
+          data: contactData
         });
+        console.log(`Updated contact: ${contact.id}`);
+      } else {
+        await prisma.contact.create({
+          data: contactData
+        });
+        console.log(`Created contact: ${contact.id}`);
       }
-
-      totalSynced += contacts.length;
-      console.log(`Synced ${totalSynced} contacts so far...`);
-      
-      page++;
     }
 
-    console.log('Contact sync completed successfully!');
-    console.log(`Total contacts synced: ${totalSynced}`);
+    console.log('Contact sync completed successfully');
   } catch (error) {
     console.error('Error syncing contacts:', error);
     process.exit(1);
@@ -49,4 +43,4 @@ async function syncContacts() {
   }
 }
 
-syncContacts(); 
+main(); 

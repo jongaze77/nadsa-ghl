@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { authOptions } from '@/lib/auth';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 // Helper function to check if user is admin
 async function isAdmin() {

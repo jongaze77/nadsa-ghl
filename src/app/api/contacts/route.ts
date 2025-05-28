@@ -1,9 +1,7 @@
 // src/app/api/contacts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '@/lib/ghl-api';
-
-const prisma = new PrismaClient();
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';

@@ -57,7 +57,7 @@ export default function UsersPage() {
       
       const data = await response.json();
       console.log('Fetched users:', data);
-      setUsers(data);
+      setUsers(data.users);
     } catch (err: any) {
       console.error('Error in fetchUsers:', err);
       setError(err.message || 'Failed to load users');

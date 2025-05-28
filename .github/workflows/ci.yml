@@ -40,12 +40,12 @@ jobs:
     - name: Build
       run: npm run build
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://user:pass@localhost/db' }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'dummy-secret-for-build' }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
         GHL_API_KEY: dummy-key-for-build
         GHL_LOCATION_ID: dummy-location-id
-        NEXT_PUBLIC_BASE_URL: http://localhost:3000
+        NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' }}
 
     # 6 ─ Save updated .next cache -------------------------------------------------
     #    (only if the build step succeeded and the cache was not a hit)

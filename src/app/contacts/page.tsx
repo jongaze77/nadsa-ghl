@@ -128,6 +128,9 @@ function ContactsPageContent() {
                     Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    City
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Membership Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -146,6 +149,9 @@ function ContactsPageContent() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {contact.phone}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {contact.city}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {contact.membershipType}

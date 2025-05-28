@@ -129,6 +129,7 @@ const fieldOrder = [
   { key: 'notes', type: 'notes' },
 ];
 
+// Tell Next.js this page is always dynamic
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 

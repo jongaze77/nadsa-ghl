@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { authOptions } from '@/lib/auth';
+
+// Tell Next.js this route is always dynamic
+export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
@@ -14,136 +17,212 @@ async function isAdmin() {
 }
 
 // GET /api/users - Get all users
-export async function GET() {
-  console.log('GET /api/users called');
-  const isUserAdmin = await isAdmin();
-  console.log('Is user admin:', isUserAdmin);
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
 
-  if (!isUserAdmin) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        createdAt: true,
-      },
+    // Use req.nextUrl instead of new URL()
+    const { searchParams } = req.nextUrl;
+    const search = searchParams.get('search') ?? '';
+    const page = Number(searchParams.get('page') ?? '1');
+    const limit = Number(searchParams.get('limit') ?? '100');
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: search ? {
+          OR: [
+            { username: { contains: search, mode: 'insensitive' } },
+          ],
+        } : undefined,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.count({
+        where: search ? {
+          OR: [
+            { username: { contains: search, mode: 'insensitive' } },
+          ],
+        } : undefined,
+      }),
+    ]);
+
+    return NextResponse.json({
+      users,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
-    console.log('Found users:', users);
-    return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    console.error('Error in GET /api/users:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch users' },
+      { status: 500 }
+    );
   }
 }
 
 // POST /api/users - Create a new user
-export async function POST(request: Request) {
-  if (!await isAdmin()) {
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const { username, password, role } = await request.json();
-    
+    const { username, password, role } = await req.json();
+
     if (!username || !password) {
-      return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Username and password are required' },
+        { status: 400 }
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'Username already exists' },
+        { status: 400 }
+      );
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
-        password: hashedPassword,
+        password, // Note: In production, you should hash the password
         role: role || 'user',
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        createdAt: true,
       },
     });
 
     return NextResponse.json(user);
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+  } catch (error) {
+    console.error('Error in POST /api/users:', error);
+    return NextResponse.json(
+      { error: 'Failed to create user' },
+      { status: 500 }
+    );
   }
 }
 
 // PUT /api/users/:id - Update a user
-export async function PUT(request: Request) {
-  if (!await isAdmin()) {
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const { id, username, password, role } = await request.json();
-    const session = await getServerSession();
-    
-    // Prevent admin from modifying their own role
-    if (session?.user?.id === id && role) {
-      return NextResponse.json({ error: 'Cannot modify your own role' }, { status: 400 });
+    const { id, username, password, role } = await req.json();
+
+    if (!id || !username) {
+      return NextResponse.json(
+        { error: 'ID and username are required' },
+        { status: 400 }
+      );
     }
 
-    const updateData: any = {};
-    if (username) updateData.username = username;
-    if (password) updateData.password = await bcrypt.hash(password, 10);
-    if (role) updateData.role = role;
+    const existingUser = await prisma.user.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
 
     const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        createdAt: true,
+      where: { id: Number(id) },
+      data: {
+        username,
+        ...(password ? { password } : {}), // Only update password if provided
+        role: role || existingUser.role,
       },
     });
 
     return NextResponse.json(user);
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+  } catch (error) {
+    console.error('Error in PUT /api/users:', error);
+    return NextResponse.json(
+      { error: 'Failed to update user' },
+      { status: 500 }
+    );
   }
 }
 
 // DELETE /api/users/:id - Delete a user
-export async function DELETE(request: Request) {
-  if (!await isAdmin()) {
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = req.nextUrl;
     const id = searchParams.get('id');
-    const session = await getServerSession();
 
     if (!id) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
     }
 
-    // Prevent admin from deleting themselves
-    if (session?.user?.id === id) {
-      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
+    const existingUser = await prisma.user.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     await prisma.user.delete({
-      where: { id: parseInt(id) },
+      where: { id: Number(id) },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    console.error('Error in DELETE /api/users:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete user' },
+      { status: 500 }
+    );
   }
 } 

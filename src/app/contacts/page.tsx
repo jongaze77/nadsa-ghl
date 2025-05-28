@@ -1,9 +1,7 @@
 'use client';
 
 import type React from 'react';
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { Suspense } from 'react';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,7 +17,7 @@ interface ContactsResponse {
   };
 }
 
-export default function ContactsPage() {
+function ContactsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -190,5 +188,13 @@ export default function ContactsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+      <ContactsPageContent />
+    </Suspense>
   );
 } 

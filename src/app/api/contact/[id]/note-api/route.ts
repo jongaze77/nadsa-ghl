@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   const { searchParams } = req.nextUrl;
   const page = Number(searchParams.get('page') ?? '1');
   const limit = Number(searchParams.get('limit') ?? '10');
@@ -49,9 +49,9 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -90,14 +90,15 @@ export async function PUT(
   }
 }
 
-const GHL_API_KEY = getApiKey();
-const GHL_LOCATION_ID = getLocationId();
-
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!GHL_API_KEY || !GHL_LOCATION_ID) {
+  const { id } = await params;
+  const apiKey = getApiKey();
+  const locationId = getLocationId();
+  
+  if (!apiKey || !locationId) {
     return NextResponse.json(
       { error: 'Missing API key or location ID' },
       { status: 500 }
@@ -105,13 +106,13 @@ export async function POST(
   }
 
   try {
-    const body = await request.json();
+    const body = await req.json();
     const res = await fetch(
-      `https://rest.gohighlevel.com/v1/contacts/${params.id}/notes`,
+      `https://rest.gohighlevel.com/v1/contacts/${id}/notes`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GHL_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ body: body.body }),
@@ -137,10 +138,9 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const GHL_API_KEY = getApiKey();
-  const GHL_LOCATION_ID = getLocationId();
-  // ... existing code ...
+  const { id } = await params;
+  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
 }

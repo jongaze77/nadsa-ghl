@@ -27,9 +27,9 @@ async function forward(res: Response) {
 /* ─ GET /api/contact/[id] ──────────────────────────────── */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   const key = getApiKey();
 
   const hlRes = await fetch(
@@ -60,9 +60,9 @@ export async function GET(
 /* ─ PUT /api/contact/[id] ──────────────────────────────── */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id }  = params;
+  const { id } = await params;
   const body    = await req.json();          // already in correct shape
 
   const hl = await fetch(`https://rest.gohighlevel.com/v1/contacts/${id}`, {

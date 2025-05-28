@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
 import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '../lib/ghl-api';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 async function main() {
   try {

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '@/lib/ghl-api';
+import { Prisma } from '@prisma/client';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';

@@ -2,46 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+    # 1 ─ Checkout ----------------------------------------------------------------
     - uses: actions/checkout@v4
-    
+
+    # 2 ─ Node + npm cache ---------------------------------------------------------
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Type check
-      run: npm run type-check || true
-    
-    - name: Lint
-      run: npm run lint
-    
-    - name: Cache Next.js build
+        node-version: 18
+        cache: npm           # restores ~/.npm automatically
+
+    # 3 ─ Restore Next.js build cache ---------------------------------------------
+    - name: Restore .next/cache
       uses: actions/cache@v3
+      id: nextjs-cache              # we’ll need the id later
       with:
-        path: |
-          .next/cache
-        key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+        path: .next/cache
+        key: ${{ runner.os }}-next-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-    
+          ${{ runner.os }}-next-
+
+    # 4 ─ Install, type-check, lint ----------------------------------------------
+    - run: npm ci
+    - run: npm run type-check || true
+    - run: npm run lint
+
+    # 5 ─ Build -------------------------------------------------------------------
     - name: Build
       run: npm run build
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-        GHL_API_KEY: "dummy-key-for-build"
-        GHL_LOCATION_ID: "dummy-location-id" 
+        DATABASE_URL:   ${{ secrets.DATABASE_URL }}
+        NEXTAUTH_SECRET:${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL:   ${{ secrets.NEXTAUTH_URL }}
+        GHL_API_KEY:    dummy-key-for-build
+        GHL_LOCATION_ID:dummy-location-id
+
+    # 6 ─ Save updated .next cache -------------------------------------------------
+    #    (only if the build step succeeded and the cache was not a hit)
+    - name: Save .next/cache
+      if: success() && steps.nextjs-cache.outputs.cache-hit != 'true'
+      uses: actions/cache@v3
+      with:
+        path: .next/cache
+        key: ${{ steps.nextjs-cache.outputs.cache-primary-key }}

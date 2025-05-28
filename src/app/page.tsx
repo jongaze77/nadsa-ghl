@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 const MAX_PAGES = 20; // Safety limit
@@ -90,7 +91,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let seenIds = new Set();
 
   while (hasMore && page <= 20) {
-    const res = await fetch(`/api/contacts?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+    const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     const contacts = data.contacts || [];
@@ -99,7 +100,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
     const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
     newContacts.forEach((c: any) => seenIds.add(c.id));
     allContacts = allContacts.concat(newContacts);
-    hasMore = data.meta?.hasMore && newContacts.length > 0;
+    hasMore = data.pagination?.hasMore && newContacts.length > 0;
     page++;
   }
   console.log(`Total contacts fetched: ${allContacts.length}`);
@@ -130,7 +131,9 @@ const fieldOrder = [
 
 export default function Home() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [search, setSearch] = useState('');
+  const [showMembersOnly, setShowMembersOnly] = useState(false);
   const [allContacts, setAllContacts] = useState<any[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -143,12 +146,15 @@ export default function Home() {
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string|null>(null);
-  const [saveOk,   setSaveOk]   = useState(false);
+  const [saveOk, setSaveOk] = useState(false);
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-  // Fetch all contacts and their details on first load (with pagination)
   useEffect(() => {
+    if (!session) {
+      router.push('/login');
+      return;
+    }
     async function fetchAllContacts() {
       setContactsLoading(true);
       setContactsError(null);
@@ -157,13 +163,36 @@ export default function Home() {
         const contacts = await fetchAllContactsFromAPI();
 
         /* 2. keep in state ONLY what the list needs (id, names, email) */
-        const trimmed = contacts.map((c: any) => ({
-          id: c.id,
-          firstName: c.firstName,
-          lastName : c.lastName,
-          email    : c.email,
-          contactName: c.name,
-        }));
+        const trimmed = contacts.map((c: any) => {
+          // Log the full contact object to see its structure
+          console.log('Full contact object:', JSON.stringify(c, null, 2));
+          
+          // Try different ways to access the membership type
+          let membershipType = c.membershipType; // First try direct field
+          
+          // If not found, try custom fields
+          if (!membershipType && c.customFields) {
+            if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
+              membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
+            } else if (Array.isArray(c.customFields)) {
+              const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
+              if (membershipField) {
+                membershipType = membershipField.value;
+              }
+            }
+          }
+          
+          console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType);
+          
+          return {
+            id: c.id,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            email: c.email,
+            contactName: c.name,
+            membershipType: membershipType
+          };
+        });
 
         /* 3. sort Surname → First name once */
         trimmed.sort(sortContacts);
@@ -176,20 +205,36 @@ export default function Home() {
       }
     }
     fetchAllContacts();
-  }, []);
+  }, [session, router]);
 
   // Client-side fuzzy search and filter
   useEffect(() => {
-    if (!search.trim()) {
-      setFilteredContacts(allContacts);
-      return;
+    let filtered = allContacts;
+
+    // Apply member filter first
+    if (showMembersOnly) {
+      console.log('Filtering members. Total contacts:', allContacts.length);
+      filtered = filtered.filter(c => {
+        const membershipType = c.membershipType;
+        const isMember = membershipType && ['Full', 'Associate', 'Newsletter Only', 'Ex Member'].includes(membershipType);
+        console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType, 'Is Member:', isMember);
+        return isMember;
+      });
+      console.log('After member filter:', filtered.length, 'contacts');
     }
-    setFilteredContacts(
-      allContacts.filter(c =>
-        fuzzyMatch(c.contactName || '', search) || fuzzyMatch(c.email || '', search)
-      )
-    );
-  }, [search, allContacts]);
+
+    // Then apply search filter
+    if (search.trim()) {
+      filtered = filtered.filter(c =>
+        fuzzyMatch(c.firstName || '', search) ||
+        fuzzyMatch(c.lastName || '', search) ||
+        fuzzyMatch(c.contactName || '', search) ||
+        fuzzyMatch(c.email || '', search)
+      );
+    }
+
+    setFilteredContacts(filtered);
+  }, [search, allContacts, showMembersOnly]);
 
   // Fetch contact details and note when selectedContact changes
   useEffect(() => {
@@ -297,21 +342,28 @@ export default function Home() {
     }
   }
   
+  if (!session) return null;
+  if (contactsLoading) return <div className="p-4">Loading...</div>;
+  if (contactsError) return <div className="p-4 text-red-500">{contactsError}</div>;
+
   return (
     <main className="bg-white min-h-screen p-6 flex flex-col items-center text-black">
-      <div className="w-full max-w-2xl mb-4 flex justify-between items-center">
+      <div className="w-full max-w-2xl mb-4">
         <h1 className="text-4xl font-bold" style={{ letterSpacing: 2 }}>GHL Client Manager</h1>
-        {session && (
-          <button
-            onClick={() => signOut()}
-            className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
-            Sign Out
-          </button>
-        )}
       </div>
       <div className="w-full max-w-2xl mb-8">
-        <label htmlFor="search" className="block text-lg font-semibold mb-2">Search Contacts</label>
+        <div className="flex justify-between items-center mb-4">
+          <label htmlFor="search" className="block text-lg font-semibold">Search Contacts</label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showMembersOnly}
+              onChange={e => setShowMembersOnly(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-lg font-semibold">Show Members Only</span>
+          </label>
+        </div>
         <input
           id="search"
           type="text"

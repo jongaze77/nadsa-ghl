@@ -30,4 +30,20 @@ model Contact {
   membershipType String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  
+  // Additional GHL fields
+  name          String?
+  companyName   String?
+  address1      String?
+  address2      String?
+  city          String?
+  state         String?
+  postalCode    String?
+  country       String?
+  website       String?
+  source        String?
+  tags          String[]
+  customFields  Json?    // Store all custom fields as JSON
+  ghlUpdatedAt  DateTime?
+  lastSyncedAt  DateTime @default(now())
 }

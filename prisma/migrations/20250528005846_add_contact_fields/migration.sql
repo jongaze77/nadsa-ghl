@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "Contact" ADD COLUMN     "address1" TEXT,
+ADD COLUMN     "address2" TEXT,
+ADD COLUMN     "city" TEXT,
+ADD COLUMN     "companyName" TEXT,
+ADD COLUMN     "country" TEXT,
+ADD COLUMN     "customFields" JSONB,
+ADD COLUMN     "ghlUpdatedAt" TIMESTAMP(3),
+ADD COLUMN     "lastSyncedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "name" TEXT,
+ADD COLUMN     "postalCode" TEXT,
+ADD COLUMN     "source" TEXT,
+ADD COLUMN     "state" TEXT,
+ADD COLUMN     "tags" TEXT[],
+ADD COLUMN     "website" TEXT;

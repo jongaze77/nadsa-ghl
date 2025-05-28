@@ -1,12 +1,7 @@
 import { Contact } from '@prisma/client';
 
-const GHL_API_KEY = process.env.GHL_API_KEY;
 const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
-
-if (!GHL_API_KEY) {
-  throw new Error('Missing GHL_API_KEY environment variable');
-}
 
 interface RetryConfig {
   maxRetries: number;
@@ -24,6 +19,14 @@ async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function getApiKey(): string {
+  const key = process.env.GHL_API_KEY;
+  if (!key) {
+    throw new Error('Missing GHL_API_KEY environment variable');
+  }
+  return key;
+}
+
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
@@ -38,7 +41,7 @@ async function fetchWithRetry(
         ...options,
         headers: {
           ...options.headers,
-          Authorization: `Bearer ${GHL_API_KEY}`,
+          Authorization: `Bearer ${getApiKey()}`,
           'Content-Type': 'application/json',
         },
       });

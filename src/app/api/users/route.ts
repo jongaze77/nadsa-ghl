@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
 
 // Helper function to check if user is admin
 async function isAdmin() {

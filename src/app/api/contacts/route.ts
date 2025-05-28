@@ -5,6 +5,7 @@ import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '@/lib/ghl-api';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {

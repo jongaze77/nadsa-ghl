@@ -31,7 +31,10 @@ export async function PUT(
     // 4. Update local database with GHL data
     const syncedContact = await prisma.contact.update({
       where: { id: contactId },
-      data: prismaData,
+      data: {
+        ...prismaData,
+        customFields: prismaData.customFields ? JSON.parse(JSON.stringify(prismaData.customFields)) : null,
+      },
     });
 
     return NextResponse.json(syncedContact);

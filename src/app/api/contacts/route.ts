@@ -7,10 +7,11 @@ const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search') || '';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    // Use a base URL for the URL constructor
+    const url = new URL(request.url, 'http://localhost');
+    const search = url.searchParams.get('search') || '';
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '100');
 
     // Build where clause for search
     const where: Prisma.ContactWhereInput = search

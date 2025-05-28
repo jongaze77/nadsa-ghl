@@ -159,16 +159,26 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Prepare update data
+    const updateData: any = {
+      username,
+      role: role || existingUser.role,
+    };
+
+    // Only hash and update password if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+
     const user = await prisma.user.update({
       where: { id: Number(id) },
-      data: {
-        username,
-        ...(password ? { password } : {}), // Only update password if provided
-        role: role || existingUser.role,
-      },
+      data: updateData,
     });
 
-    return NextResponse.json(user);
+    // Don't return the password in the response
+    const { password: _, ...userWithoutPassword } = user;
+    return NextResponse.json(userWithoutPassword);
   } catch (error) {
     console.error('Error in PUT /api/users:', error);
     return NextResponse.json(

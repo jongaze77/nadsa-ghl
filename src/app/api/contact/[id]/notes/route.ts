@@ -5,11 +5,10 @@ import { getApiKey, getLocationId } from '@/lib/ghl-api';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const params = await context.params;
-  const id = params.id;
+  const { id } = params;
   const GHL_API_KEY = getApiKey();
   const GHL_LOCATION_ID = getLocationId();
 

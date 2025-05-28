@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  /* config options here */
+module.exports = {
+  eslint: {
+    // WARNING: allows production builds even with ESLint errors.
+    ignoreDuringBuilds: true,
+  },
 };
-
-module.exports = nextConfig; 

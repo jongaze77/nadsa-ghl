@@ -1,10 +1,10 @@
 {
   "extends": [
     "next/core-web-vitals",
-    "eslint:recommended"
+    "next/typescript"
   ],
   "rules": {
-    "no-unused-vars": "warn",
-    "no-console": "warn"
+    "no-console": "off",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
   }
 } 

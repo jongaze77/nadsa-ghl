@@ -5,13 +5,16 @@ import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '@/lib/ghl-api';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+// Tell Next.js this route is always dynamic
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
   try {
-    // Use a base URL for the URL constructor
-    const url = new URL(request.url, 'http://localhost');
-    const search = url.searchParams.get('search') || '';
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '100');
+    // Use req.nextUrl instead of new URL()
+    const { searchParams } = req.nextUrl;
+    const search = searchParams.get('search') ?? '';
+    const page = Number(searchParams.get('page') ?? '1');
+    const limit = Number(searchParams.get('limit') ?? '100');
 
     // Build where clause for search
     const where: Prisma.ContactWhereInput = search

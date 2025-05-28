@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Tell Next.js this route is always dynamic
+export const dynamic = 'force-dynamic';
+
 const GHL_API_KEY = process.env.GHL_API_KEY;
 const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID;
 

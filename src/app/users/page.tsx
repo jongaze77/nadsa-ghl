@@ -1,5 +1,9 @@
 'use client';
 
+// Tell Next.js this page is always dynamic
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';

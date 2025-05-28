@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Tell Next.js this route is always dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const apiKey = process.env.GHL_API_KEY;
 

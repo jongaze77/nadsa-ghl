@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "test": "npm run type-check && npm run lint",
     "sync-contacts": "ts-node src/scripts/sync-contacts.ts",
     "postinstall": "prisma generate"
   },

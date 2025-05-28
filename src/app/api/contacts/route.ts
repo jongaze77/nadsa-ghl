@@ -42,9 +42,12 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         contacts,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
       });
     } catch (dbError: any) {
       console.error('Database error:', dbError);

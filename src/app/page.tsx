@@ -89,7 +89,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   const limit = 100;
   const seenIds = new Set();
 
-  while (hasMore && page <= 20) {
+  while (page <= 20) {
     const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -99,7 +99,12 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
     const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
     newContacts.forEach((c: any) => seenIds.add(c.id));
     allContacts = allContacts.concat(newContacts);
-    hasMore = data.pagination?.hasMore && newContacts.length > 0;
+    
+    // Check if we've reached the last page
+    const { page: currentPage, totalPages } = data.pagination;
+    hasMore = currentPage < totalPages;
+    if (!hasMore) break;
+    
     page++;
   }
   console.log(`Total contacts fetched: ${allContacts.length}`);
@@ -127,6 +132,21 @@ const fieldOrder = [
   { key: 'gift_aid', type: 'custom' },
   { key: 'notes', type: 'notes' },
 ];
+
+function normalizeMembershipType(mt: string | null | undefined): string {
+  if (!mt) return '';
+  return mt.trim().toLowerCase().replace(/member$/i, '').trim();
+}
+
+function isMember(mt: string | null | undefined): boolean {
+  const normal = normalizeMembershipType(mt);
+  return (
+    normal.startsWith('full') ||
+    normal.startsWith('associate') ||
+    normal.startsWith('newsletter') ||
+    normal.startsWith('ex')
+  );
+}
 
 // Tell Next.js this page is always dynamic
 export const dynamic = 'force-dynamic';
@@ -216,9 +236,9 @@ export default function Home() {
       console.log('Filtering members. Total contacts:', allContacts.length);
       filtered = filtered.filter(c => {
         const membershipType = c.membershipType;
-        const isMember = membershipType && ['Full', 'Associate', 'Newsletter Only', 'Ex Member'].includes(membershipType);
-        console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType, 'Is Member:', isMember);
-        return isMember;
+        const isMemberResult = isMember(membershipType);
+        console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType, 'Is Member:', isMemberResult);
+        return isMemberResult;
       });
       console.log('After member filter:', filtered.length, 'contacts');
     }
@@ -293,54 +313,30 @@ export default function Home() {
     return text ? JSON.parse(text) : null;
   }
   
-  async function handleUpdate() {
+  const handleUpdate = async (payload: any) => {
     if (!selectedContact) return;
-  
-    setSaving(true); setSaveError(null); setSaveOk(false);
-  
-    try {
-      /* 1 – contact */
-      const payload = buildPayload(form);
-      const res = await fetch(`/api/contact/${selectedContact.id}`, {
-        method : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify(payload),
-      });
-  
-      if (!res.ok) {
-        const errBody = await safeJson(res);
-        throw new Error(errBody?.error || `HTTP ${res.status}`);
-      }
-  
-      /* 2 – note (only if there's a new note) */
-      if (note.trim()) {
-        const noteRes = await fetch(`/api/contact/${selectedContact.id}/note`, {
-          method : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body   : JSON.stringify({ body: note }),
-        });
-        
-        if (!noteRes.ok) {
-          const errBody = await safeJson(noteRes);
-          throw new Error(errBody?.error || `HTTP ${noteRes.status}`);
-        }
 
-        // Refresh notes after adding new one
-        const notesRes = await fetch(`/api/contact/${selectedContact.id}/notes`);
-        if (notesRes.ok) {
-          const notesData = await notesRes.json();
-          setNotes(notesData.notes || []);
-        }
-        setNote(''); // Clear the note input
+    try {
+      const res = await fetch(`/api/contacts/${selectedContact.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update contact');
       }
-  
+
+      const updatedContact = await res.json();
+      setAllContacts(allContacts.map(c => c.id === updatedContact.id ? updatedContact : c));
+      setSelectedContact(updatedContact);
+      setShowMembersOnly(false);
       setSaveOk(true);
-    } catch (err: any) {
-      setSaveError(err.message || 'Unknown error');
-    } finally {
-      setSaving(false);
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      setSaveError('Failed to update contact');
     }
-  }
+  };
   
   if (!session) return null;
   if (contactsLoading) return <div className="p-4">Loading...</div>;
@@ -514,7 +510,7 @@ export default function Home() {
           })}
           <button
             type="button"
-            onClick={handleUpdate}
+            onClick={() => handleUpdate(buildPayload(form))}
             className={`w-full py-4 rounded-lg text-2xl font-bold focus:outline-none
                         focus:ring-4 focus:ring-blue-400
                         ${detailsLoading || saving

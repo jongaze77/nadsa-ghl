@@ -25,7 +25,7 @@ function ContactsPageContent() {
   const [pagination, setPagination] = useState<ContactsResponse['pagination']>({
     total: 0,
     page: 1,
-    limit: 10,
+    limit: 100,
     totalPages: 0,
   });
   const [search, setSearch] = useState('');

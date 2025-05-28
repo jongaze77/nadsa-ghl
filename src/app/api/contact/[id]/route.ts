@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiKey } from '@/lib/ghl-api';
+import { PUT as contactsPUT } from '@/app/api/contacts/[id]/route';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
@@ -58,19 +59,4 @@ export async function GET(
 }
 
 /* ─ PUT /api/contact/[id] ──────────────────────────────── */
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const body    = await req.json();          // already in correct shape
-
-  const hl = await fetch(`https://rest.gohighlevel.com/v1/contacts/${id}`, {
-    method : 'PUT',                          // <-- correct verb
-    headers: auth(),
-    body   : JSON.stringify(body),
-  });
-
-  if (hl.status === 204) return NextResponse.json({ ok: true });
-  return forward(hl);
-}
+export { contactsPUT as PUT };

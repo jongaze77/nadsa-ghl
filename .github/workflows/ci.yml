@@ -45,6 +45,7 @@ jobs:
         NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
         GHL_API_KEY: dummy-key-for-build
         GHL_LOCATION_ID: dummy-location-id
+        NEXT_PUBLIC_BASE_URL: http://localhost:3000
 
     # 6 ─ Save updated .next cache -------------------------------------------------
     #    (only if the build step succeeded and the cache was not a hit)

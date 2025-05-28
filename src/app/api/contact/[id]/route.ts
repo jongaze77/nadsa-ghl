@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey } from '@/lib/ghl-api';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
 
 /* ─ helpers ────────────────────────────────────────────── */
 function auth(): HeadersInit {
-  const key = process.env.GHL_API_KEY;
+  const key = getApiKey();
   if (!key) throw new Error('Missing API key');
   return {
     Authorization: `Bearer ${key}`,
@@ -29,6 +30,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const key = getApiKey();
 
   const hlRes = await fetch(
     `https://rest.gohighlevel.com/v1/contacts/${id}?include_custom_fields=true`,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey, getLocationId } from '@/lib/ghl-api';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export async function GET(
   const page = Number(searchParams.get('page') ?? '1');
   const limit = Number(searchParams.get('limit') ?? '10');
 
-  const apiKey = process.env.GHL_API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
   }
@@ -52,7 +53,7 @@ export async function PUT(
 ) {
   const { id } = await params;
 
-  const apiKey = process.env.GHL_API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
   }
@@ -89,8 +90,8 @@ export async function PUT(
   }
 }
 
-const GHL_API_KEY = process.env.GHL_API_KEY;
-const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID;
+const GHL_API_KEY = getApiKey();
+const GHL_LOCATION_ID = getLocationId();
 
 export async function POST(
   request: Request,
@@ -133,4 +134,13 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const GHL_API_KEY = getApiKey();
+  const GHL_LOCATION_ID = getLocationId();
+  // ... existing code ...
 }

@@ -1,15 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey, getLocationId } from '@/lib/ghl-api';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
 
-const GHL_API_KEY = process.env.GHL_API_KEY;
-const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID;
-
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const GHL_API_KEY = getApiKey();
+  const GHL_LOCATION_ID = getLocationId();
+
   if (!GHL_API_KEY || !GHL_LOCATION_ID) {
     return NextResponse.json(
       { error: 'Missing API key or location ID' },

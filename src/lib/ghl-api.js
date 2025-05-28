@@ -2,12 +2,12 @@ const { Contact } = require('@prisma/client');
 
 const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
 
-function getApiKey() {
-  const key = process.env.GHL_API_KEY;
-  if (!key) {
-    throw new Error('Missing GHL_API_KEY environment variable');
-  }
-  return key;
+export function getApiKey() {
+  return process.env.GHL_API_KEY || "";
+}
+
+export function getLocationId() {
+  return process.env.GHL_LOCATION_ID || "";
 }
 
 const defaultRetryConfig = {
@@ -56,7 +56,7 @@ async function fetchWithRetry(
   throw lastError || new Error('Failed to fetch after retries');
 }
 
-async function fetchContactFromGHL(contactId) {
+export async function fetchContactFromGHL(contactId) {
   const response = await fetchWithRetry(
     `${GHL_API_BASE}/contacts/${contactId}`,
     { method: 'GET' }
@@ -64,7 +64,7 @@ async function fetchContactFromGHL(contactId) {
   return response.json();
 }
 
-async function updateContactInGHL(contactId, data) {
+export async function updateContactInGHL(contactId, data) {
   const response = await fetchWithRetry(
     `${GHL_API_BASE}/contacts/${contactId}`,
     {
@@ -75,7 +75,7 @@ async function updateContactInGHL(contactId, data) {
   return response.json();
 }
 
-async function fetchAllContactsFromGHL(page = 1, limit = 100) {
+export async function fetchAllContactsFromGHL(page = 1, limit = 100) {
   const response = await fetchWithRetry(
     `${GHL_API_BASE}/contacts?page=${page}&limit=${limit}&include_custom_fields=true`,
     { method: 'GET' }
@@ -83,7 +83,7 @@ async function fetchAllContactsFromGHL(page = 1, limit = 100) {
   return response.json();
 }
 
-function mapGHLContactToPrisma(ghlContact) {
+export function mapGHLContactToPrisma(ghlContact) {
   return {
     id: ghlContact.id,
     firstName: ghlContact.firstName || null,
@@ -105,11 +105,4 @@ function mapGHLContactToPrisma(ghlContact) {
     ghlUpdatedAt: ghlContact.updatedAt ? new Date(ghlContact.updatedAt) : null,
     lastSyncedAt: new Date(),
   };
-}
-
-module.exports = {
-  fetchContactFromGHL,
-  updateContactInGHL,
-  fetchAllContactsFromGHL,
-  mapGHLContactToPrisma,
-}; 
+} 

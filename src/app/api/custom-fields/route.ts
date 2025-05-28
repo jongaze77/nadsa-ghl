@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey } from '@/lib/ghl-api';
 
 // Tell Next.js this route is always dynamic
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const apiKey = process.env.GHL_API_KEY;
+  const apiKey = getApiKey();
 
   if (!apiKey) {
     return NextResponse.json({ error: 'Missing API key' }, { status: 500 });

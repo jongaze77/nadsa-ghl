@@ -19,12 +19,12 @@ async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getApiKey(): string {
-  const key = process.env.GHL_API_KEY;
-  if (!key) {
-    throw new Error('Missing GHL_API_KEY environment variable');
-  }
-  return key;
+export function getApiKey() {
+  return process.env.GHL_API_KEY || "";
+}
+
+export function getLocationId() {
+  return process.env.GHL_LOCATION_ID || "";
 }
 
 async function fetchWithRetry(

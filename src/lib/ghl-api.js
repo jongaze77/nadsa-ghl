@@ -1,10 +1,13 @@
 const { Contact } = require('@prisma/client');
 
-const GHL_API_KEY = process.env.GHL_API_KEY;
 const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
 
-if (!GHL_API_KEY) {
-  throw new Error('Missing GHL_API_KEY environment variable');
+function getApiKey() {
+  const key = process.env.GHL_API_KEY;
+  if (!key) {
+    throw new Error('Missing GHL_API_KEY environment variable');
+  }
+  return key;
 }
 
 const defaultRetryConfig = {
@@ -31,7 +34,7 @@ async function fetchWithRetry(
         ...options,
         headers: {
           ...options.headers,
-          Authorization: `Bearer ${GHL_API_KEY}`,
+          Authorization: `Bearer ${getApiKey()}`,
           'Content-Type': 'application/json',
         },
       });

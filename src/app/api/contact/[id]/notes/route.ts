@@ -6,8 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const params = await context.params;
+  const id = params.id;
   const GHL_API_KEY = getApiKey();
   const GHL_LOCATION_ID = getLocationId();
 
@@ -20,7 +22,7 @@ export async function GET(
 
   try {
     const res = await fetch(
-      `https://rest.gohighlevel.com/v1/contacts/${params.id}/notes`,
+      `https://rest.gohighlevel.com/v1/contacts/${id}/notes`,
       {
         headers: {
           'Authorization': `Bearer ${GHL_API_KEY}`,

@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
+  const { id } = params;
+  const { searchParams } = req.nextUrl;
+  const page = Number(searchParams.get('page') ?? '1');
+  const limit = Number(searchParams.get('limit') ?? '10');
 
   const apiKey = process.env.GHL_API_KEY;
   if (!apiKey) {
@@ -15,25 +18,31 @@ export async function GET(
   }
 
   try {
-    const res = await fetch(`https://rest.gohighlevel.com/v1/contacts/${id}/notes/`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const res = await fetch(
+      `https://rest.gohighlevel.com/v1/contacts/${id}/notes?page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const text = await res.text();
     if (!res.ok) {
+      const error = await res.json();
       return NextResponse.json(
-        { error: 'Failed to fetch notes', status: res.status, body: text },
+        { error: error.message || 'Failed to fetch notes' },
         { status: res.status }
       );
     }
 
-    const { notes = [] } = JSON.parse(text);
-    return NextResponse.json({ note: notes[0] ?? null });
-  } catch (err) {
-    return NextResponse.json({ error: 'Server error', details: err }, { status: 500 });
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch notes' },
+      { status: 500 }
+    );
   }
 }
 

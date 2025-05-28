@@ -24,7 +24,7 @@ jobs:
     # 3 ─ Restore Next.js build cache ---------------------------------------------
     - name: Restore .next/cache
       uses: actions/cache@v3
-      id: nextjs-cache              # we’ll need the id later
+      id: nextjs-cache              # we'll need the id later
       with:
         path: .next/cache
         key: ${{ runner.os }}-next-${{ github.sha }}
@@ -40,11 +40,11 @@ jobs:
     - name: Build
       run: npm run build
       env:
-        DATABASE_URL:   ${{ secrets.DATABASE_URL }}
-        NEXTAUTH_SECRET:${{ secrets.NEXTAUTH_SECRET }}
-        NEXTAUTH_URL:   ${{ secrets.NEXTAUTH_URL }}
-        GHL_API_KEY:    dummy-key-for-build
-        GHL_LOCATION_ID:dummy-location-id
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        GHL_API_KEY: dummy-key-for-build
+        GHL_LOCATION_ID: dummy-location-id
 
     # 6 ─ Save updated .next cache -------------------------------------------------
     #    (only if the build step succeeded and the cache was not a hit)

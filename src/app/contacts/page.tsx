@@ -15,7 +15,7 @@ function normalizeMembershipType(mt: string | null | undefined): string {
 function isMember(mt: string | null | undefined): boolean {
   if (!mt) return false;
   const type = mt.trim().toUpperCase();
-  return ['F', 'A', 'N', 'E'].includes(type);
+  return ['F', 'A'].includes(type);
 }
 
 function fuzzyMatch(str: string, query: string) {
@@ -98,9 +98,16 @@ export default function ContactsList() {
             }
           }
         }
-        
-        // Get the initial before storing in state
-        const membershipInitial = getMembershipTypeInitial(membershipType);
+
+        // Convert membership type to initial
+        let membershipInitial = '';
+        if (membershipType) {
+          const type = membershipType.trim().toLowerCase();
+          if (type.startsWith('full')) membershipInitial = 'F';
+          else if (type.startsWith('associate')) membershipInitial = 'A';
+          else if (type.startsWith('newsletter')) membershipInitial = 'N';
+          else if (type.startsWith('ex')) membershipInitial = 'E';
+        }
         
         return {
           id: c.id,
@@ -166,8 +173,8 @@ export default function ContactsList() {
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
-    <main className="bg-white min-h-screen flex flex-col">
-      {/* Fixed header section */}
+    <div className="h-screen flex flex-col bg-white">
+      {/* Fixed header */}
       <div className="flex-none p-6 bg-white border-b">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
@@ -207,205 +214,203 @@ export default function ContactsList() {
         </div>
       </div>
 
-      {/* Fixed height container for table */}
+      {/* Table container */}
       <div className="flex-1 relative">
-        <div className="absolute inset-0 overflow-x-auto">
+        <div className="absolute inset-0 overflow-auto">
           <div className="min-w-full inline-block align-middle">
-            <div className="overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('lastName')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('lastName')}
-                        className="group inline-flex items-center"
-                      >
-                        Last Name
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'lastName' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Last Name
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'lastName' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('firstName')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('firstName')}
-                        className="group inline-flex items-center"
-                      >
-                        First Name
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'firstName' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      First Name
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'firstName' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('email')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('email')}
-                        className="group inline-flex items-center"
-                      >
-                        Email
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'email' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Email
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'email' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('phone')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('phone')}
-                        className="group inline-flex items-center"
-                      >
-                        Phone
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'phone' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Phone
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'phone' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('address1')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('address1')}
-                        className="group inline-flex items-center"
-                      >
-                        Address
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'address1' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Address
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'address1' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('postalCode')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('postalCode')}
-                        className="group inline-flex items-center"
-                      >
-                        Postcode
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'postalCode' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Postcode
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'postalCode' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('membershipType')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('membershipType')}
-                        className="group inline-flex items-center"
-                      >
-                        Type
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'membershipType' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      Type
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'membershipType' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    <button
+                      onClick={() => handleSort('renewalDate')}
+                      className="group inline-flex items-center"
                     >
-                      <button
-                        onClick={() => handleSort('renewalDate')}
-                        className="group inline-flex items-center"
+                      Renewal Date
+                      <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
+                        {sortField === 'renewalDate' ? (
+                          sortDirection === 'asc' ? '↑' : '↓'
+                        ) : (
+                          <span className="invisible group-hover:visible group-focus:visible">↕</span>
+                        )}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="relative px-3 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredContacts.map((contact) => (
+                  <tr key={contact.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.lastName)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.firstName)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.email)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.phone)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.address1)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {truncateText(contact.postalCode)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {getMembershipTypeInitial(contact.membershipType)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {contact.renewalDate ? new Date(contact.renewalDate).toLocaleDateString() : ''}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                      <Link
+                        href={`/contacts/${contact.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-900"
                       >
-                        Renewal Date
-                        <span className="ml-2 flex-none rounded text-gray-400 group-hover:visible group-focus:visible">
-                          {sortField === 'renewalDate' ? (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          ) : (
-                            <span className="invisible group-hover:visible group-focus:visible">↕</span>
-                          )}
-                        </span>
-                      </button>
-                    </th>
-                    <th scope="col" className="relative px-3 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
+                        View
+                      </Link>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredContacts.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.lastName)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.firstName)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.email)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.phone)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.address1)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {truncateText(contact.postalCode)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {getMembershipTypeInitial(contact.membershipType)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {contact.renewalDate ? new Date(contact.renewalDate).toLocaleDateString() : ''}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
-                        <Link
-                          href={`/contacts/${contact.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -456,16 +461,16 @@ export default function ContactsList() {
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
 
 function getMembershipTypeInitial(mt: string | null | undefined): string {
   if (!mt) return '';
-  const type = mt.trim().toLowerCase();
-  if (type.startsWith('full')) return 'F';
-  if (type.startsWith('associate')) return 'A';
-  if (type.startsWith('newsletter')) return 'N';
-  if (type.startsWith('ex')) return 'E';
+  const type = mt.trim().toUpperCase();
+  if (type === 'F') return 'Full';
+  if (type === 'A') return 'Associate';
+  if (type === 'N') return 'Newsletter';
+  if (type === 'E') return 'Ex';
   return '';
 } 

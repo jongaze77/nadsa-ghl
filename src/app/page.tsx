@@ -142,13 +142,9 @@ function normalizeMembershipType(mt: string | null | undefined): string {
 }
 
 function isMember(mt: string | null | undefined): boolean {
-  const normal = normalizeMembershipType(mt);
-  return (
-    normal.startsWith('full') ||
-    normal.startsWith('associate') ||
-    normal.startsWith('newsletter') ||
-    normal.startsWith('ex')
-  );
+  if (!mt) return false;
+  const type = mt.trim().toUpperCase();
+  return ['F', 'A'].includes(type);
 }
 
 // Tell Next.js this page is always dynamic
@@ -182,19 +178,12 @@ export default function Home() {
       setContactsLoading(true);
       setContactsError(null);
       try {
-        /* 1. just fetch the paginated list */
         const contacts = await fetchAllContactsFromAPI();
 
-        /* 2. keep in state ONLY what the list needs (id, names, email) */
         const trimmed = contacts.map((c: any) => {
-          // Log the full contact object to see its structure
-          console.log('Full contact object:', JSON.stringify(c, null, 2));
+          let membershipType = c.membershipType;
           
-          // Try different ways to access the membership type
-          let membershipType = c.membershipType; // First try direct field
-          
-          // If not found, try custom fields
-          if (!membershipType && c.customFields) {
+          if (c.customFields) {
             if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
               membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
             } else if (Array.isArray(c.customFields)) {
@@ -204,8 +193,16 @@ export default function Home() {
               }
             }
           }
-          
-          console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType);
+
+          // Convert membership type to initial
+          let membershipInitial = '';
+          if (membershipType) {
+            const type = membershipType.trim().toLowerCase();
+            if (type.startsWith('full')) membershipInitial = 'F';
+            else if (type.startsWith('associate')) membershipInitial = 'A';
+            else if (type.startsWith('newsletter')) membershipInitial = 'N';
+            else if (type.startsWith('ex')) membershipInitial = 'E';
+          }
           
           return {
             id: c.id,
@@ -213,13 +210,11 @@ export default function Home() {
             lastName: c.lastName,
             email: c.email,
             contactName: c.name,
-            membershipType: membershipType
+            membershipType: membershipInitial
           };
         });
 
-        /* 3. sort Surname → First name once */
         trimmed.sort(sortContacts);
-
         setAllContacts(trimmed);
       } catch (err: any) {
         setContactsError(err.message || 'Failed to load contacts');

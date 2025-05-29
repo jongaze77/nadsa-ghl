@@ -48,22 +48,45 @@ const FIELD_MAP: Record<string, string> = {
 
 function flattenCustomFields(contact: any) {
   const flat: Record<string, any> = {};
-  const cf = contact.customField;
+  const cf = contact.customFields || contact.customField;
 
   if (!cf) return flat;
 
-  if (!Array.isArray(cf)) {
+  if (typeof cf === 'string') {
+    try {
+      const parsed = JSON.parse(cf);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item: any) => {
+          const key = FIELD_MAP[item.id];
+          if (key) flat[key] = item.value;
+        });
+      } else {
+        Object.entries(parsed).forEach(([id, value]) => {
+          const key = FIELD_MAP[id];
+          if (key) flat[key] = value;
+        });
+      }
+    } catch (e) {
+      console.error('Failed to parse custom fields:', e);
+    }
+    return flat;
+  }
+
+  if (Array.isArray(cf)) {
+    cf.forEach((item: any) => {
+      const key = FIELD_MAP[item.id];
+      if (key) flat[key] = item.value;
+    });
+    return flat;
+  }
+
+  if (typeof cf === 'object') {
     Object.entries(cf).forEach(([id, value]) => {
       const key = FIELD_MAP[id];
       if (key) flat[key] = value;
     });
     return flat;
   }
-
-  cf.forEach((item: any) => {
-    const key = FIELD_MAP[item.id];
-    if (key) flat[key] = item.value;
-  });
 
   return flat;
 }

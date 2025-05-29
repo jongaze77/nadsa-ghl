@@ -13,13 +13,9 @@ function normalizeMembershipType(mt: string | null | undefined): string {
 }
 
 function isMember(mt: string | null | undefined): boolean {
-  const normal = normalizeMembershipType(mt);
-  return (
-    normal.startsWith('full') ||
-    normal.startsWith('associate') ||
-    normal.startsWith('newsletter') ||
-    normal.startsWith('ex')
-  );
+  if (!mt) return false;
+  const type = mt.trim().toUpperCase();
+  return ['F', 'A', 'N', 'E'].includes(type);
 }
 
 function fuzzyMatch(str: string, query: string) {
@@ -51,7 +47,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   return allContacts;
 }
 
-type SortField = 'firstName' | 'lastName' | 'email' | 'membershipType';
+type SortField = 'firstName' | 'lastName' | 'email' | 'membershipType' | 'phone' | 'address1' | 'postalCode' | 'renewalDate';
 type SortDirection = 'asc' | 'desc';
 
 export default function ContactsList() {
@@ -80,24 +76,37 @@ export default function ContactsList() {
       const contacts = await fetchAllContactsFromAPI();
       const trimmed = contacts.map((c: any) => {
         let membershipType = c.membershipType;
-        if (!membershipType && c.customFields) {
+        let renewalDate = null;
+        
+        if (c.customFields) {
           if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
             membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
+            renewalDate = c.customFields['cWMPNiNAfReHOumOhBB2']; // Renewal date field ID
           } else if (Array.isArray(c.customFields)) {
             const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
+            const renewalField = c.customFields.find((cf: any) => cf.id === 'cWMPNiNAfReHOumOhBB2');
             if (membershipField) {
               membershipType = membershipField.value;
             }
+            if (renewalField) {
+              renewalDate = renewalField.value;
+            }
           }
         }
+        
+        // Get the initial before storing in state
+        const membershipInitial = getMembershipTypeInitial(membershipType);
         
         return {
           id: c.id,
           firstName: c.firstName,
           lastName: c.lastName,
           email: c.email,
-          contactName: c.name,
-          membershipType: membershipType
+          phone: c.phone,
+          address1: c.address1,
+          postalCode: c.postalCode,
+          membershipType: membershipInitial,
+          renewalDate: renewalDate
         };
       });
       setContacts(trimmed);
@@ -124,11 +133,23 @@ export default function ContactsList() {
       return (
         fuzzyMatch(c.firstName || '', search) ||
         fuzzyMatch(c.lastName || '', search) ||
-        fuzzyMatch(c.contactName || '', search) ||
         fuzzyMatch(c.email || '', search)
       );
     })
     .sort((a, b) => {
+      if (sortField === 'renewalDate') {
+        // Handle empty dates
+        if (!a[sortField] && !b[sortField]) return 0;
+        if (!a[sortField]) return 1;
+        if (!b[sortField]) return -1;
+        
+        // Compare dates
+        const dateA = new Date(a[sortField]).getTime();
+        const dateB = new Date(b[sortField]).getTime();
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      
+      // Default string comparison for other fields
       const aValue = a[sortField] || '';
       const bValue = b[sortField] || '';
       const comparison = aValue.localeCompare(bValue, 'en', { sensitivity: 'base' });
@@ -195,9 +216,33 @@ export default function ContactsList() {
                 </th>
                 <th 
                   className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('phone')}
+                >
+                  Phone {sortField === 'phone' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('address1')}
+                >
+                  Address {sortField === 'address1' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('postalCode')}
+                >
+                  Postcode {sortField === 'postalCode' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
                   onClick={() => handleSort('membershipType')}
                 >
-                  Membership Type {sortField === 'membershipType' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Type {sortField === 'membershipType' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('renewalDate')}
+                >
+                  Renewal Date {sortField === 'renewalDate' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th className="p-3 text-left">Actions</th>
               </tr>
@@ -208,15 +253,19 @@ export default function ContactsList() {
                   <td className="p-3">{contact.lastName || ''}</td>
                   <td className="p-3">{contact.firstName || ''}</td>
                   <td className="p-3">{contact.email || ''}</td>
+                  <td className="p-3">{contact.phone || ''}</td>
+                  <td className="p-3">{contact.address1 || ''}</td>
+                  <td className="p-3">{contact.postalCode || ''}</td>
                   <td className="p-3">{contact.membershipType || ''}</td>
+                  <td className="p-3">{contact.renewalDate || ''}</td>
                   <td className="p-3">
                     <Link
                       href={`/contacts/${contact.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
+                      className="block w-full text-center px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
                     >
-                      View Details
+                      View
                     </Link>
                   </td>
                 </tr>
@@ -227,4 +276,14 @@ export default function ContactsList() {
       </div>
     </main>
   );
+}
+
+function getMembershipTypeInitial(mt: string | null | undefined): string {
+  if (!mt) return '';
+  const type = mt.trim().toLowerCase();
+  if (type.startsWith('full')) return 'F';
+  if (type.startsWith('associate')) return 'A';
+  if (type.startsWith('newsletter')) return 'N';
+  if (type.startsWith('ex')) return 'E';
+  return '';
 } 

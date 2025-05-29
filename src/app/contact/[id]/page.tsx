@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -108,7 +108,7 @@ function buildPayload(form: any) {
 }
 
 export default function ContactDetails({ params }: { params: { id: string } }) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const [form, setForm] = useState<any>({});
   const [note, setNote] = useState('');
@@ -119,71 +119,47 @@ export default function ContactDetails({ params }: { params: { id: string } }) {
   const [saveError, setSaveError] = useState<string|null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
-  // Remove React.use() and directly use params.id
-  const contactId = params.id;
-
   useEffect(() => {
-    if (status === 'loading') {
-      return;
-    }
-    
-    if (status === 'unauthenticated') {
+    if (!session) {
       router.push('/login');
       return;
     }
-
-    if (status === 'authenticated' && session) {
-      loadContact();
-    }
-  }, [status, session, router, contactId]);
+    loadContact();
+  }, [session, router, params.id]);
 
   async function loadContact() {
     setLoading(true);
     setError(null);
     try {
       const [contactRes, notesRes] = await Promise.all([
-        fetch(`/api/contacts/${contactId}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        }),
-        fetch(`/api/contacts/${contactId}/notes`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        })
+        fetch(`/api/contact/${params.id}`),
+        fetch(`/api/contact/${params.id}/notes`)
       ]);
 
-      if (!contactRes.ok) {
-        const errorData = await contactRes.json();
-        throw new Error(errorData.error || 'Failed to fetch contact');
-      }
-      if (!notesRes.ok) {
-        const errorData = await notesRes.json();
-        throw new Error(errorData.error || 'Failed to fetch notes');
-      }
+      if (!contactRes.ok) throw new Error('Failed to fetch contact');
+      if (!notesRes.ok) throw new Error('Failed to fetch notes');
 
       const contact = await contactRes.json();
       const notesData = await notesRes.json();
 
       setForm({ ...contact, ...flattenCustomFields(contact) });
-      setNotes(notesData.notes || []);
+      setNotes(notesData?.notes || []);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to load contact');
     } finally {
       setLoading(false);
     }
   }
 
   const handleUpdate = async () => {
+    if (!params.id) return;
+
     setSaving(true);
     setSaveError(null);
     setSaveOk(false);
 
     try {
-      const res = await fetch(`/api/contacts/${contactId}`, {
+      const res = await fetch(`/api/contacts/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload(form)),
@@ -194,35 +170,28 @@ export default function ContactDetails({ params }: { params: { id: string } }) {
       }
 
       setSaveOk(true);
-      await loadContact();
-    } catch (err: any) {
-      setSaveError(err.message);
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      setSaveError('Failed to update contact');
     } finally {
       setSaving(false);
     }
   };
 
-  if (status === 'loading') {
-    return <div className="p-4">Loading session...</div>;
-  }
-
-  if (status === 'unauthenticated') {
-    return <div className="p-4">Please log in to view this page.</div>;
-  }
-
-  if (loading) return <div className="p-4">Loading contact details...</div>;
+  if (!session) return null;
+  if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
     <main className="bg-white min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold" style={{ letterSpacing: 2 }}>Contact Details</h1>
           <Link 
             href="/contacts"
             className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
           >
-            Back to Contacts
+            Back to List
           </Link>
         </div>
 

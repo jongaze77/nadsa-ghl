@@ -155,22 +155,59 @@ export async function GET(
 ) {
   try {
     const { id: contactId } = await params;
-    const contact = await prisma.contact.findUnique({
-      where: { id: contactId },
-    });
+    log(`\n🔵 ===== FETCHING CONTACT ${contactId} =====`);
 
-    if (!contact) {
+    // Check session
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      log('❌ No session found');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    log(`👤 User: ${session.user?.name}`);
+
+    // 1. Fetch from GHL first
+    log('🔄 Fetching contact from GHL...');
+    const ghlContact = await fetchContactFromGHL(contactId);
+    if (!ghlContact) {
+      log(`❌ Contact not found in GHL: ${contactId}`);
       return NextResponse.json(
         { error: 'Contact not found' },
         { status: 404 }
       );
     }
 
+    // 2. Map to Prisma format
+    const prismaData = mapGHLContactToPrisma(ghlContact);
+    log(`📦 Mapped to Prisma: ${JSON.stringify(prismaData, null, 2)}`);
+
+    // 3. Update local database
+    const contact = await prisma.contact.upsert({
+      where: { id: contactId },
+      update: {
+        ...prismaData,
+        customFields: prismaData.customFields ? JSON.parse(JSON.stringify(prismaData.customFields)) : null,
+        lastSyncedAt: new Date(),
+      },
+      create: {
+        id: contactId,
+        ...prismaData,
+        customFields: prismaData.customFields ? JSON.parse(JSON.stringify(prismaData.customFields)) : null,
+        lastSyncedAt: new Date(),
+      },
+    });
+
+    log(`✅ Contact fetched and synced: ${JSON.stringify(contact, null, 2)}`);
+    log('\n🔵 ===== CONTACT FETCH COMPLETED =====\n');
+
     return NextResponse.json(contact);
   } catch (error) {
-    console.error('Error fetching contact:', error);
+    log('\n❌ ===== ERROR IN CONTACT FETCH =====');
+    log(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return NextResponse.json(
-      { error: 'Failed to fetch contact' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch contact' },
       { status: 500 }
     );
   }

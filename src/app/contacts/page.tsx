@@ -1,205 +1,230 @@
 'use client';
 
-import type React from 'react';
-import { Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Contact } from '@prisma/client';
+const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
 
-interface ContactsResponse {
-  contacts: Contact[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
+function normalizeMembershipType(mt: string | null | undefined): string {
+  if (!mt) return '';
+  return mt.trim().toLowerCase().replace(/member$/i, '').trim();
 }
 
-function ContactsPageContent() {
-  const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<ContactsResponse['pagination']>({
-    total: 0,
-    page: 1,
-    limit: 100,
-    totalPages: 0,
-  });
-  const [search, setSearch] = useState('');
-  const [membershipType, setMembershipType] = useState('');
-
-  const fetchContacts = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(membershipType && { membershipType }),
-      });
-
-      const response = await fetch(`/api/contacts?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch contacts');
-      
-      const data: ContactsResponse = await response.json();
-      setContacts(data.contacts);
-      setPagination(data.pagination);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchContacts();
-  }, [pagination.page, search, membershipType, fetchContacts]);
-
-  const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
+function isMember(mt: string | null | undefined): boolean {
+  const normal = normalizeMembershipType(mt);
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Contacts</h1>
-
-      {/* Filters */}
-      <div className="mb-6">
-        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search contacts..."
-            className="flex-1 px-4 py-2 border rounded-lg"
-          />
-          <select
-            value={membershipType}
-            onChange={(e) => setMembershipType(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
-          >
-            <option value="">All Membership Types</option>
-            <option value="Full">Full Member</option>
-            <option value="Associate">Associate Member</option>
-            <option value="Newsletter Only">Newsletter Only</option>
-            <option value="Ex Member">Ex Member</option>
-          </select>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Search
-          </button>
-        </form>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* Loading state */}
-      {loading ? (
-        <div className="text-center py-8">Loading contacts...</div>
-      ) : (
-        <>
-          {/* Contacts table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border rounded-lg">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    City
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Membership Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {contacts.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {contact.firstName} {contact.lastName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {contact.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {contact.phone}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {contact.city}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {contact.membershipType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => router.push(`/contacts/${contact.id}`)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="mt-6 flex justify-center gap-2">
-            <button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+    normal.startsWith('full') ||
+    normal.startsWith('associate') ||
+    normal.startsWith('newsletter') ||
+    normal.startsWith('ex')
   );
 }
 
-export default function ContactsPage() {
+function fuzzyMatch(str: string, query: string) {
+  return str.toLowerCase().includes(query.toLowerCase());
+}
+
+async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
+  let allContacts: any[] = [];
+  let page = 1;
+  let hasMore = true;
+  const limit = 100;
+  const seenIds = new Set();
+
+  while (page <= 20) {
+    const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const contacts = data.contacts || [];
+    const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
+    newContacts.forEach((c: any) => seenIds.add(c.id));
+    allContacts = allContacts.concat(newContacts);
+    
+    const { page: currentPage, totalPages } = data.pagination;
+    hasMore = currentPage < totalPages;
+    if (!hasMore) break;
+    
+    page++;
+  }
+  return allContacts;
+}
+
+type SortField = 'firstName' | 'lastName' | 'email' | 'membershipType';
+type SortDirection = 'asc' | 'desc';
+
+export default function ContactsList() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [showMembersOnly, setShowMembersOnly] = useState(false);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('lastName');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  useEffect(() => {
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    loadContacts();
+  }, [session, router]);
+
+  async function loadContacts() {
+    setLoading(true);
+    setError(null);
+    try {
+      const contacts = await fetchAllContactsFromAPI();
+      const trimmed = contacts.map((c: any) => {
+        let membershipType = c.membershipType;
+        if (!membershipType && c.customFields) {
+          if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
+            membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
+          } else if (Array.isArray(c.customFields)) {
+            const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
+            if (membershipField) {
+              membershipType = membershipField.value;
+            }
+          }
+        }
+        
+        return {
+          id: c.id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          contactName: c.name,
+          membershipType: membershipType
+        };
+      });
+      setContacts(trimmed);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load contacts');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredContacts = contacts
+    .filter(c => {
+      if (showMembersOnly && !isMember(c.membershipType)) return false;
+      if (!search) return true;
+      return (
+        fuzzyMatch(c.firstName || '', search) ||
+        fuzzyMatch(c.lastName || '', search) ||
+        fuzzyMatch(c.contactName || '', search) ||
+        fuzzyMatch(c.email || '', search)
+      );
+    })
+    .sort((a, b) => {
+      const aValue = a[sortField] || '';
+      const bValue = b[sortField] || '';
+      const comparison = aValue.localeCompare(bValue, 'en', { sensitivity: 'base' });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+  if (!session) return null;
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
+
   return (
-    <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
-      <ContactsPageContent />
-    </Suspense>
+    <main className="bg-white min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold" style={{ letterSpacing: 2 }}>Contacts List</h1>
+          <Link 
+            href="/"
+            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
+          >
+            Back to Home
+          </Link>
+        </div>
+
+        <div className="mb-6 flex gap-4 items-center">
+          <input
+            type="text"
+            className="flex-1 p-3 border-2 border-black rounded-lg text-xl focus:outline-none focus:ring-4 focus:ring-blue-400"
+            placeholder="Search contacts..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showMembersOnly}
+              onChange={e => setShowMembersOnly(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-lg font-semibold">Show Members Only</span>
+          </label>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('lastName')}
+                >
+                  Last Name {sortField === 'lastName' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('firstName')}
+                >
+                  First Name {sortField === 'firstName' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('email')}
+                >
+                  Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="p-3 text-left cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort('membershipType')}
+                >
+                  Membership Type {sortField === 'membershipType' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="p-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredContacts.map(contact => (
+                <tr key={contact.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3">{contact.lastName || ''}</td>
+                  <td className="p-3">{contact.firstName || ''}</td>
+                  <td className="p-3">{contact.email || ''}</td>
+                  <td className="p-3">{contact.membershipType || ''}</td>
+                  <td className="p-3">
+                    <Link
+                      href={`/contacts/${contact.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
+                    >
+                      View Details
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
   );
 } 

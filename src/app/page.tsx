@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 

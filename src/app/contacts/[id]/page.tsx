@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
@@ -130,10 +130,10 @@ function buildPayload(form: any) {
   return out;
 }
 
-export default function ContactDetails() {
+export default function ContactDetails({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const params = useParams();
+  const contactId = React.use(params).id;
   const [form, setForm] = useState<any>({});
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);
@@ -142,8 +142,6 @@ export default function ContactDetails() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string|null>(null);
   const [saveOk, setSaveOk] = useState(false);
-
-  const contactId = params.id as string;
 
   useEffect(() => {
     if (status === 'loading') {

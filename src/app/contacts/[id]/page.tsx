@@ -133,7 +133,8 @@ function buildPayload(form: any) {
 export default function ContactDetails({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const contactId = React.use(params).id;
+  const resolvedParams = React.use(params);
+  const contactId = resolvedParams.id;
   const [form, setForm] = useState<any>({});
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
@@ -107,9 +107,10 @@ function buildPayload(form: any) {
   return out;
 }
 
-export default function ContactDetails({ params }: { params: { id: string } }) {
+export default function ContactDetails() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const params = useParams();
   const [form, setForm] = useState<any>({});
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);
@@ -119,8 +120,7 @@ export default function ContactDetails({ params }: { params: { id: string } }) {
   const [saveError, setSaveError] = useState<string|null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
-  // Remove React.use() and directly use params.id
-  const contactId = params.id;
+  const contactId = params.id as string;
 
   useEffect(() => {
     if (status === 'loading') {

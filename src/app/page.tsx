@@ -9,7 +9,8 @@ import {
   isMember,
   sortContacts
 } from '@/lib/contact-filter';
-import MembershipTypeFilterPanel, { MembershipType } from "@/components/MembershipTypeFilterPanel";
+import MembershipTypeFilterPanel from "@/components/MembershipTypeFilterPanel";
+import { useLocalStorageMembershipTypeFilter } from "@/lib/useLocalStorageMembershipTypeFilter";
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 
@@ -137,7 +138,7 @@ export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<MembershipType[]>([]);
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useLocalStorageMembershipTypeFilter();
   const [allContacts, setAllContacts] = useState<any[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);

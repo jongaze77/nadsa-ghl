@@ -33,16 +33,27 @@ export default function EditContactClient({ id, contact, formData: initialFormDa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Build payload with empty strings set to null
+  const buildPayload = (form: ContactFormData) => {
+    const payload: Record<string, any> = {};
+    Object.keys(form).forEach((key) => {
+      // set '' to null, otherwise use the value
+      payload[key] = form[key as keyof ContactFormData] === '' ? null : form[key as keyof ContactFormData];
+    });
+    return payload;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
 
     try {
+      const payload = buildPayload(formData);
       const response = await fetch(`/api/contacts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Failed to update contact');

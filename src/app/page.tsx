@@ -3,6 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import {
+  fuzzyMatch,
+  normalizeMembershipType,
+  isMember,
+  sortContacts
+} from '@/lib/contact-filter';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 
@@ -71,18 +77,6 @@ function flattenCustomFields(contact: any) {
   return flat;
 }
 
-function fuzzyMatch(str: string, query: string) {
-  return str.toLowerCase().includes(query.toLowerCase());
-}
-
-function sortContacts(a: any, b: any) {
-  // use lastName → firstName; fall back to contactName; finally to email
-  return  (a.lastName  || '').localeCompare(b.lastName  || '', 'en', {sensitivity:'base'}) ||
-          (a.firstName || '').localeCompare(b.firstName || '', 'en', {sensitivity:'base'}) ||
-          (a.contactName||'').localeCompare(b.contactName||'', 'en', {sensitivity:'base'}) ||
-          (a.email      || '').localeCompare(b.email      || '', 'en', {sensitivity:'base'});
-}
-
 async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let allContacts: any[] = [];
   let page = 1;
@@ -134,21 +128,6 @@ const fieldOrder = [
   { key: 'gift_aid', type: 'custom' },
   { key: 'notes', type: 'notes' },
 ];
-
-function normalizeMembershipType(mt: string | null | undefined): string {
-  if (!mt) return '';
-  return mt.trim().toLowerCase().replace(/member$/i, '').trim();
-}
-
-function isMember(mt: string | null | undefined): boolean {
-  const normal = normalizeMembershipType(mt);
-  return (
-    normal.startsWith('full') ||
-    normal.startsWith('associate') ||
-    normal.startsWith('newsletter') ||
-    normal.startsWith('ex')
-  );
-}
 
 // Tell Next.js this page is always dynamic
 export const dynamic = 'force-dynamic';

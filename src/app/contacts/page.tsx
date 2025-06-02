@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Contact } from '@prisma/client';
+import MembershipTypeFilterPanel, { MembershipType } from "@/components/MembershipTypeFilterPanel";
 
 interface ContactsResponse {
   contacts: Contact[];
@@ -29,7 +30,7 @@ function ContactsPageContent() {
     totalPages: 0,
   });
   const [search, setSearch] = useState('');
-  const [membershipType, setMembershipType] = useState('');
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<MembershipType[]>([]);
 
   const fetchContacts = async () => {
     try {
@@ -38,7 +39,7 @@ function ContactsPageContent() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(search && { search }),
-        ...(membershipType && { membershipType }),
+        ...(selectedMembershipTypes.length > 0 && { membershipTypes: selectedMembershipTypes.join(',') }),
       });
 
       const response = await fetch(`/api/contacts?${params}`);
@@ -56,7 +57,7 @@ function ContactsPageContent() {
 
   useEffect(() => {
     fetchContacts();
-  }, [pagination.page, search, membershipType, fetchContacts]);
+  }, [pagination.page, search, selectedMembershipTypes, fetchContacts]);
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
@@ -81,17 +82,10 @@ function ContactsPageContent() {
             placeholder="Search contacts..."
             className="flex-1 px-4 py-2 border rounded-lg"
           />
-          <select
-            value={membershipType}
-            onChange={(e) => setMembershipType(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
-          >
-            <option value="">All Membership Types</option>
-            <option value="Full">Full Member</option>
-            <option value="Associate">Associate Member</option>
-            <option value="Newsletter Only">Newsletter Only</option>
-            <option value="Ex Member">Ex Member</option>
-          </select>
+          <MembershipTypeFilterPanel
+            selected={selectedMembershipTypes}
+            onChange={setSelectedMembershipTypes}
+          />
           <button
             type="submit"
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

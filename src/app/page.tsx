@@ -9,6 +9,7 @@ import {
   isMember,
   sortContacts
 } from '@/lib/contact-filter';
+import MembershipTypeFilterPanel, { MembershipType } from "@/components/MembershipTypeFilterPanel";
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 
@@ -136,7 +137,7 @@ export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [showMembersOnly, setShowMembersOnly] = useState(false);
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<MembershipType[]>([]);
   const [allContacts, setAllContacts] = useState<any[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -212,16 +213,15 @@ export default function Home() {
   useEffect(() => {
     let filtered = allContacts;
 
-    // Apply member filter first
-    if (showMembersOnly) {
-      console.log('Filtering members. Total contacts:', allContacts.length);
-      filtered = filtered.filter(c => {
-        const membershipType = c.membershipType;
-        const isMemberResult = isMember(membershipType);
-        console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType, 'Is Member:', isMemberResult);
-        return isMemberResult;
+    // Membership type filtering (multi-select)
+    if (selectedMembershipTypes.length > 0) {
+      filtered = filtered.filter((c) => {
+        // Normalize for comparison (case-insensitive)
+        const mt = (c.membershipType || "").trim().toLowerCase();
+        return selectedMembershipTypes.some(sel =>
+          mt === sel.toLowerCase()
+        );
       });
-      console.log('After member filter:', filtered.length, 'contacts');
     }
 
     // Then apply search filter
@@ -235,7 +235,7 @@ export default function Home() {
     }
 
     setFilteredContacts(filtered);
-  }, [search, allContacts, showMembersOnly]);
+  }, [search, allContacts, selectedMembershipTypes]);
 
   // Fetch contact details and note when selectedContact changes
   useEffect(() => {
@@ -315,7 +315,6 @@ export default function Home() {
       const updatedContact = await res.json();
       setAllContacts(allContacts.map(c => c.id === updatedContact.id ? updatedContact : c));
       setSelectedContact(updatedContact);
-      setShowMembersOnly(false);
       setSaveOk(true);
     } catch (error) {
       console.error('Error updating contact:', error);
@@ -335,15 +334,10 @@ export default function Home() {
       <div className="w-full max-w-2xl mb-8">
         <div className="flex justify-between items-center mb-4">
           <label htmlFor="search" className="block text-lg font-semibold">Search Contacts</label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showMembersOnly}
-              onChange={e => setShowMembersOnly(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-lg font-semibold">Show Members Only</span>
-          </label>
+          <MembershipTypeFilterPanel
+            selected={selectedMembershipTypes}
+            onChange={setSelectedMembershipTypes}
+          />
         </div>
         <input
           id="search"

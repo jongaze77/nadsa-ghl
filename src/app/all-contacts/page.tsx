@@ -6,6 +6,8 @@ import { useLocalStorageMembershipTypeFilter } from '@/lib/useLocalStorageMember
 import { fuzzyMatch } from '@/lib/contact-filter';
 import EditContactClient from '../contacts/[id]/EditContactClient';
 import { Contact } from '@prisma/client';
+import ContactEditForm from "@/components/ContactEditForm";
+
 
 // Column definitions
 const COLUMNS = [
@@ -147,12 +149,26 @@ export default function AllContactsPage() {
 
   // For modal background
   function Modal({ children, onClose }: { children: React.ReactNode, onClose: () => void }) {
+    // Prevent background scroll when modal is open
+    useEffect(() => {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }, []);
+  
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-        <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full relative"
-            onClick={e => e.stopPropagation()}>
-          <button className="absolute top-2 right-2 text-2xl text-gray-400 hover:text-gray-600"
-            onClick={onClose} aria-label="Close">&times;</button>
+        <div
+          className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            className="absolute top-2 right-2 text-2xl text-gray-400 hover:text-gray-600"
+            onClick={onClose}
+            aria-label="Close"
+          >&times;</button>
           {children}
         </div>
       </div>
@@ -271,19 +287,38 @@ function EditContactModal({
     country: contact.country || '',
     website: contact.website || '',
   });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/contacts/${contact.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) throw new Error('Failed to update contact');
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
       <h2 className="text-xl font-bold mb-2">Edit Contact</h2>
-      <EditContactClient id={contact.id} contact={contact} formData={formData} onCancel={onClose} />
-      <div className="text-right mt-2">
-        <button
-          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-          onClick={onClose}
-        >
-          Close
-        </button>
-      </div>
+      <ContactEditForm
+        form={formData}
+        setForm={setFormData}
+        saving={saving}
+        error={error}
+        onSave={handleSave}
+        onCancel={onClose}
+      />
     </div>
   );
 }

@@ -1,3 +1,5 @@
+// src/lib/ghl-api.ts
+
 import { Contact } from '@prisma/client';
 
 const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
@@ -102,7 +104,13 @@ export async function fetchAllContactsFromGHL(page: number = 1, limit: number = 
     `${GHL_API_BASE}/contacts?page=${page}&limit=${limit}&include_custom_fields=true`,
     { method: 'GET' }
   );
-  return response.json();
+  const raw = await response.text();
+  // Log raw response here!
+  if (page === 1) {
+    console.log('RAW GHL API RESPONSE:', raw.slice(0, 1000)); // print first 1000 chars for privacy
+  }
+  const data = JSON.parse(raw);
+  return data;
 }
 
 function normalizeMembershipType(mt: string | null | undefined): string {
@@ -118,24 +126,31 @@ function normalizeMembershipType(mt: string | null | undefined): string {
   return mt.trim(); // Return original if no match
 }
 
-export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
-  // Extract membership type from custom fields
+function extractMembershipType(ghlContact: any): string | null {
+  const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
+  const possibleCF =
+    ghlContact.customField ||
+    ghlContact.customFields ||
+    (ghlContact.contact && (ghlContact.contact.customField || ghlContact.contact.customFields));
   let membershipType = null;
-  if (ghlContact.customField) {
-    if (typeof ghlContact.customField === 'object' && !Array.isArray(ghlContact.customField)) {
-      membershipType = ghlContact.customField[MEMBERSHIP_TYPE_ID];
-    } else if (Array.isArray(ghlContact.customField)) {
-      const membershipField = ghlContact.customField.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
+
+  if (possibleCF) {
+    if (typeof possibleCF === 'object' && !Array.isArray(possibleCF)) {
+      membershipType = possibleCF[MEMBERSHIP_TYPE_ID];
+    } else if (Array.isArray(possibleCF)) {
+      const membershipField = possibleCF.find(
+        (f: any) => f.id === MEMBERSHIP_TYPE_ID
+      );
       if (membershipField) {
         membershipType = membershipField.value;
       }
     }
   }
 
-  // Normalize the membership type
-  membershipType = normalizeMembershipType(membershipType);
+  return normalizeMembershipType(membershipType);
+}
 
-  // Handle both direct contact object and nested contact object
+export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
   const contact = ghlContact.contact || ghlContact;
 
   return {
@@ -155,12 +170,13 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
     website: contact.website || null,
     source: contact.source || null,
     tags: contact.tags || [],
-    membershipType: membershipType,
-    customFields: contact.customField || null,
+    membershipType: extractMembershipType(ghlContact),
+    customFields: contact.customField || contact.customFields || null,
     ghlUpdatedAt: contact.updatedAt ? new Date(contact.updatedAt) : null,
     lastSyncedAt: new Date(),
   };
 }
+
 
 export interface FieldChange {
   field: string;
@@ -244,4 +260,4 @@ export function trackContactChanges(oldContact: any, newContact: any): FieldChan
   log('🔍 ===== COMPARISON COMPLETE =====\n');
 
   return changes;
-} 
+}

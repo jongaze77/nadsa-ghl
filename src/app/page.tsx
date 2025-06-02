@@ -173,17 +173,17 @@ export default function Home() {
           // Try different ways to access the membership type
           let membershipType = c.membershipType; // First try direct field
           
-          // If not found, try custom fields
-          if (!membershipType && c.customFields) {
-            if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
-              membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
-            } else if (Array.isArray(c.customFields)) {
-              const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
-              if (membershipField) {
-                membershipType = membershipField.value;
-              }
-            }
-          }
+          // // If not found, try custom fields
+          // if (!membershipType && c.customFields) {
+          //   if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
+          //     membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
+          //   } else if (Array.isArray(c.customFields)) {
+          //     const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
+          //     if (membershipField) {
+          //       membershipType = membershipField.value;
+          //     }
+          //   }
+          // }
           
           console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType);
           

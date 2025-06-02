@@ -11,6 +11,7 @@ import {
 } from '@/lib/contact-filter';
 import MembershipTypeFilterPanel from "@/components/MembershipTypeFilterPanel";
 import { useLocalStorageMembershipTypeFilter } from "@/lib/useLocalStorageMembershipTypeFilter";
+import FullContactEditForm from '@/components/FullContactEditForm';
 
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
 
@@ -375,134 +376,14 @@ export default function Home() {
         </div>
       </div>
       {selectedContact && (
-        <form className="w-full max-w-2xl bg-gray-100 p-6 rounded-lg border-2 border-black mb-8" style={{ fontSize: '1.25rem' }}>
-          <h2 className="text-2xl font-bold mb-4">Edit Contact Details</h2>
-          {detailsLoading && <div className="text-lg text-blue-700 mb-2">Loading details...</div>}
-          {detailsError && <div className="text-lg text-red-700 mb-2">{detailsError}</div>}
-          {fieldOrder.map(field => {
-            if (field.type === 'standard') {
-              const f = standardFields.find(sf => sf.key === field.key);
-              if (!f) return null;
-              return (
-                <div className="mb-4" key={f.key}>
-                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
-                  <input
-                    id={f.key}
-                    type={f.type}
-                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                    value={form[f.key] || ''}
-                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                    aria-label={f.label}
-                    disabled={detailsLoading}
-                  />
-                </div>
-              );
-            }
-            if (field.type === 'custom') {
-              const f = customFields.find(cf => cf.key === field.key);
-              if (!f) return null;
-              return (
-                <div className="mb-4" key={f.key}>
-                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
-                  {f.type === 'text' || f.type === 'date' ? (
-                    <input
-                      id={f.key}
-                      type={f.type}
-                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                      value={form[f.key] || ''}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                      aria-label={f.label}
-                      disabled={detailsLoading}
-                    />
-                  ) : f.type === 'select' ? (
-                    <select
-                      id={f.key}
-                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                      value={form[f.key] || ''}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                      aria-label={f.label}
-                      disabled={detailsLoading}
-                    >
-                      <option value="">-- Select --</option>
-                      {f.options?.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : f.type === 'radio' ? (
-                    <div className="flex gap-6">
-                      {f.options?.map(opt => (
-                        <label key={opt} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={f.key}
-                            value={opt}
-                            checked={form[f.key] === opt}
-                            onChange={() => setForm({ ...form, [f.key]: opt })}
-                            aria-label={opt}
-                            disabled={detailsLoading}
-                          />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            }
-            if (field.type === 'notes') {
-              return (
-                <div className="mb-6" key="notes">
-                  <label className="block font-semibold mb-1" htmlFor="note">Add New Note</label>
-                  <textarea
-                    id="note"
-                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400 text-xl mb-4"
-                    rows={4}
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    aria-label="New note"
-                    disabled={detailsLoading}
-                    placeholder="Type your new note here..."
-                  />
-                  
-                  <div className="mt-6">
-                    <h3 className="text-xl font-semibold mb-2">Previous Notes</h3>
-                    <div className="max-h-96 overflow-y-auto border-2 border-black rounded-lg p-4">
-                      {notes.length === 0 ? (
-                        <p className="text-gray-600 italic">No previous notes</p>
-                      ) : (
-                        <div className="space-y-4">
-                          {notes.map((note) => (
-                            <div key={note.id} className="border-b border-gray-300 pb-4 last:border-0">
-                              <p className="whitespace-pre-wrap">{note.body}</p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {new Date(note.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })}
-          <button
-            type="button"
-            onClick={() => handleUpdate(buildPayload(form))}
-            className={`w-full py-4 rounded-lg text-2xl font-bold focus:outline-none
-                        focus:ring-4 focus:ring-blue-400
-                        ${detailsLoading || saving
-                           ? 'bg-gray-400 cursor-not-allowed'
-                           : 'bg-blue-700 text-white hover:bg-blue-800'}`}
-            disabled={detailsLoading || saving}
-          >
-            {saving ? 'Saving…' : 'Update Contact'}
-          </button>
-          {saveError && <div className="text-red-700 mt-2">{saveError}</div>}
-          {saveOk     && <div className="text-green-700 mt-2">Saved!</div>}
-        </form>
+        <FullContactEditForm
+        form={form}
+        setForm={setForm}
+        saving={detailsLoading || saving}
+        error={saveError}
+        onSave={() => handleUpdate(buildPayload(form))}
+        // Optionally: onCancel={() => ...}
+      />
       )}
     </main>
   );

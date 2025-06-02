@@ -6,7 +6,7 @@ import { useLocalStorageMembershipTypeFilter } from '@/lib/useLocalStorageMember
 import { fuzzyMatch } from '@/lib/contact-filter';
 import EditContactClient from '../contacts/[id]/EditContactClient';
 import { Contact } from '@prisma/client';
-import ContactEditForm from "@/components/ContactEditForm";
+import FullContactEditForm from "@/components/FullContactEditForm";
 
 
 // Column definitions
@@ -311,7 +311,7 @@ function EditContactModal({
   return (
     <div>
       <h2 className="text-xl font-bold mb-2">Edit Contact</h2>
-      <ContactEditForm
+      <FullContactEditForm
         form={formData}
         setForm={setFormData}
         saving={saving}

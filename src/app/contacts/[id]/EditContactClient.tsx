@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Contact } from '@prisma/client';
-import ContactEditForm from "@/components/ContactEditForm";
+import FullContactEditForm from "@/components/FullContactEditForm";
 
 export default function EditContactClient({
   id,
@@ -38,7 +38,7 @@ export default function EditContactClient({
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Edit Contact</h1>
-      <ContactEditForm
+      <FullContactEditForm
         form={formData}
         setForm={setFormData}
         saving={saving}

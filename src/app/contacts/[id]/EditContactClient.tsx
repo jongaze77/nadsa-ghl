@@ -25,9 +25,10 @@ interface EditContactClientProps {
   id: string;
   contact: Contact;
   formData: ContactFormData;
+  onCancel?: () => void;
 }
 
-export default function EditContactClient({ id, contact, formData: initialFormData }: EditContactClientProps) {
+export default function EditContactClient({ id, contact, formData: initialFormData, onCancel }: EditContactClientProps) {
   const router = useRouter();
   const [formData, setFormData] = useState<ContactFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
@@ -268,7 +269,13 @@ export default function EditContactClient({ id, contact, formData: initialFormDa
           </button>
           <button
             type="button"
-            onClick={() => router.push('/contacts')}
+            onClick={() => {
+              if (onCancel) {
+                onCancel();
+              } else {
+                router.push('/contacts');
+              }
+            }}
             className="px-6 py-2 border rounded-lg hover:bg-gray-50"
           >
             Cancel

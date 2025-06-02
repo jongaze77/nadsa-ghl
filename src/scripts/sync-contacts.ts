@@ -1,33 +1,58 @@
 require('dotenv').config({ path: '.env.local' });
-import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from '../lib/ghl-api';
-import { prisma } from '../lib/prisma';
+import { PrismaClient } from '@prisma/client';
+import { fetchAllContactsFromGHL, mapGHLContactToPrisma, fetchContactFromGHL } from '../lib/ghl-api';
 import type { Prisma } from '@prisma/client';
 
+const prisma = new PrismaClient();
+
 async function main() {
+  console.log('Starting contact sync...');
+  let totalCreated = 0;
+  let totalUpdated = 0;
+  let totalErrors = 0;
+
   try {
-    console.log('Starting contact sync...');
+    // --- Fetch all contacts from all pages ---
     let page = 1;
     let hasMore = true;
     const limit = 100;
-    let totalContacts = 0;
-    let totalUpdated = 0;
-    let totalCreated = 0;
+    const allContacts: any[] = [];
 
     while (hasMore) {
-      console.log(`\nFetching page ${page}...`);
       const response = await fetchAllContactsFromGHL(page, limit);
       const contacts = response.contacts || [];
-      
-      if (contacts.length === 0) {
-        hasMore = false;
-        continue;
+      if (contacts.length === 0) break;
+      allContacts.push(...contacts);
+
+      hasMore = response.pagination
+        ? response.pagination.page < response.pagination.totalPages
+        : contacts.length === limit;
+      page++;
+    }
+    console.log(`Found ${allContacts.length} contacts in GHL`);
+
+    const total = allContacts.length;
+    let processed = 0;
+
+    for (const [i, contact] of allContacts.entries()) {
+      processed = i + 1;
+      // Show progress every 10, and for first/last contact
+      if (processed === 1 || processed === total || processed % 10 === 0) {
+        console.log(
+          `[${processed}/${total}] Syncing contact: ${contact.firstName || ''} ${contact.lastName || ''} (${contact.id})`
+        );
       }
-
-      totalContacts += contacts.length;
-      console.log(`Processing ${contacts.length} contacts from page ${page}`);
-
-      for (const contact of contacts) {
-        const prismaContact = mapGHLContactToPrisma(contact);
+      let correctGhlContact = contact;
+      try {
+        correctGhlContact = await fetchContactFromGHL(contact.id);
+      } catch (e) {
+        console.warn(
+          `  ⚠️  Couldn't fetch case-corrected GHL contact for id ${contact.id}, using paged data`
+        );
+        totalErrors++;
+      }
+      try {
+        const prismaContact = mapGHLContactToPrisma(correctGhlContact);
         const existingContact = await prisma.contact.findUnique({
           where: { id: contact.id }
         });
@@ -50,23 +75,25 @@ async function main() {
           });
           totalCreated++;
         }
+      } catch (err) {
+        console.error(
+          `  ❌ Error syncing contact ${contact.id}: ${err instanceof Error ? err.message : err}`
+        );
+        totalErrors++;
       }
-
-      // Check if we've reached the last page
-      hasMore = contacts.length === limit;
-      page++;
     }
 
-    console.log('\nContact sync completed successfully');
-    console.log(`Total contacts processed: ${totalContacts}`);
-    console.log(`Contacts updated: ${totalUpdated}`);
-    console.log(`Contacts created: ${totalCreated}`);
+    console.log('Sync completed successfully!');
+    console.log(`Created: ${totalCreated}`);
+    console.log(`Updated: ${totalUpdated}`);
+    console.log(`Errors: ${totalErrors}`);
+
   } catch (error) {
-    console.error('Error syncing contacts:', error);
+    console.error('Error during sync:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main(); 
+main();

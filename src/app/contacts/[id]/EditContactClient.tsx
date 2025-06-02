@@ -37,8 +37,9 @@ export default function EditContactClient({ id, contact, formData: initialFormDa
   const buildPayload = (form: ContactFormData) => {
     const payload: Record<string, any> = {};
     Object.keys(form).forEach((key) => {
-      // set '' to null, otherwise use the value
-      payload[key] = form[key as keyof ContactFormData] === '' ? null : form[key as keyof ContactFormData];
+      // Always send all fields; use null if blank
+      const value = form[key as keyof ContactFormData];
+      payload[key] = value === '' ? null : value;
     });
     return payload;
   };

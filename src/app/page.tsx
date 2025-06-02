@@ -272,19 +272,23 @@ export default function Home() {
   }, [selectedContact]);
 
   function buildPayload(form: any) {
-    const out: any = {};
+    const out: Record<string, any> = {};
 
     // 1. standard fields
     standardFields.forEach(f => {
-      if (form[f.key] !== undefined && form[f.key] !== '') out[f.key] = form[f.key];
+      // Always send all fields; use null if blank
+      const value = form[f.key];
+      out[f.key] = value === '' ? null : value;
     });
 
     // 2. custom fields as object { id: value }
     const cf: Record<string, any> = {};
     Object.entries(FIELD_MAP).forEach(([id, key]) => {
-      if (form[key] !== undefined && form[key] !== '') cf[id] = form[key];
+      // Always send all fields; use null if blank
+      const value = form[key];
+      cf[id] = value === '' ? null : value;
     });
-    if (Object.keys(cf).length) out.customField = cf;
+    out.customField = cf;
 
     return out;
   }

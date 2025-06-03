@@ -107,7 +107,7 @@ function buildPayload(form: any) {
   return out;
 }
 
-export default function ContactDetails({ params }: { params: { id: string } }) {
+export default function ContactPage({ params }: any) {
   const { data: session } = useSession();
   const router = useRouter();
   const [form, setForm] = useState<any>({});

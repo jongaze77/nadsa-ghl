@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Contact } from '@prisma/client';
+import type { Contact } from '.prisma/client';
 import FullContactEditForm from "@/components/FullContactEditForm";
 import { FIELD_MAP } from "@/lib/ghl-api";
 

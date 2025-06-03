@@ -5,7 +5,7 @@ import MembershipTypeFilterPanel, { MembershipType } from '@/components/Membersh
 import { useLocalStorageMembershipTypeFilter } from '@/lib/useLocalStorageMembershipTypeFilter';
 import { fuzzyMatch } from '@/lib/contact-filter';
 import EditContactClient from '../contacts/[id]/EditContactClient';
-import { Contact } from '@prisma/client';
+import type { Contact } from '.prisma/client';
 import FullContactEditForm from "@/components/FullContactEditForm";
 import { FIELD_MAP } from "@/lib/ghl-api";
 

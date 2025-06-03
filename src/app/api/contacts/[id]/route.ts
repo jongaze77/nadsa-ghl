@@ -76,13 +76,19 @@ export async function PUT(
 
     // 2. Update local database
     const { customField, ...restUpdates } = updates;
+
+    // Ensure that all fields are updated, including explicit nulls
+    const updateData: any = {
+      ...restUpdates,
+      lastSyncedAt: new Date(),
+    };
+    if (customField !== undefined) {
+      updateData.customFields = customField;
+    }
+
     const updatedContact = await prisma.contact.update({
       where: { id: contactId },
-      data: {
-        ...restUpdates,
-        customFields: customField,
-        lastSyncedAt: new Date(),
-      },
+      data: updateData,
     });
 
     log(`💾 Local contact updated: ${JSON.stringify(updatedContact, null, 2)}`);

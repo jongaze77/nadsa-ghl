@@ -5,7 +5,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+<<<<<<< HEAD
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
+=======
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Contact } from '@prisma/client';
+import MembershipTypeFilterPanel, { MembershipType } from "@/components/MembershipTypeFilterPanel";
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 
 function normalizeMembershipType(mt: string | null | undefined): string {
   if (!mt) return '';
@@ -63,8 +70,19 @@ export default function ContactsList() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+<<<<<<< HEAD
   const [sortField, setSortField] = useState<SortField>('lastName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+=======
+  const [pagination, setPagination] = useState<ContactsResponse['pagination']>({
+    total: 0,
+    page: 1,
+    limit: 100,
+    totalPages: 0,
+  });
+  const [search, setSearch] = useState('');
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<MembershipType[]>([]);
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 
   useEffect(() => {
     if (!session) {
@@ -78,6 +96,7 @@ export default function ContactsList() {
     setLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
       const contacts = await fetchAllContactsFromAPI();
       const trimmed = contacts.map((c: any) => {
         let membershipType = c.membershipType;
@@ -98,6 +117,15 @@ export default function ContactsList() {
             }
           }
         }
+=======
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(selectedMembershipTypes.length > 0 && { membershipTypes: selectedMembershipTypes.join(',') }),
+      });
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 
         // Convert membership type to initial
         let membershipInitial = '';
@@ -138,6 +166,7 @@ export default function ContactsList() {
     }
   };
 
+<<<<<<< HEAD
   const filteredContacts = contacts
     .filter(c => {
       if (showMembersOnly && !isMember(c.membershipType)) return false;
@@ -167,6 +196,11 @@ export default function ContactsList() {
       const comparison = aValue.localeCompare(bValue, 'en', { sensitivity: 'base' });
       return sortDirection === 'asc' ? comparison : -comparison;
     });
+=======
+  useEffect(() => {
+    fetchContacts();
+  }, [pagination.page, search, selectedMembershipTypes, fetchContacts]);
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 
   if (!session) return null;
   if (loading) return <div className="p-4">Loading...</div>;
@@ -187,6 +221,7 @@ export default function ContactsList() {
             </Link>
           </div>
 
+<<<<<<< HEAD
           <div className="mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
             <div className="flex-1 min-w-0 md:max-w-sm">
               <div className="relative rounded-md shadow-sm">
@@ -212,6 +247,29 @@ export default function ContactsList() {
             </div>
           </div>
         </div>
+=======
+      {/* Filters */}
+      <div className="mb-6">
+        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search contacts..."
+            className="flex-1 px-4 py-2 border rounded-lg"
+          />
+          <MembershipTypeFilterPanel
+            selected={selectedMembershipTypes}
+            onChange={setSelectedMembershipTypes}
+          />
+          <button
+            type="submit"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Search
+          </button>
+        </form>
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
       </div>
 
       {/* Table container */}

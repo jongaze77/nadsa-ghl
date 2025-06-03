@@ -3,36 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+<<<<<<< HEAD
 import Link from 'next/link';
+=======
+import {
+  fuzzyMatch,
+  sortContacts
+} from '@/lib/contact-filter';
+import MembershipTypeFilterPanel from "@/components/MembershipTypeFilterPanel";
+import { useLocalStorageMembershipTypeFilter } from "@/lib/useLocalStorageMembershipTypeFilter";
+import FullContactEditForm from '@/components/FullContactEditForm';
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 
-const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
+const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
 
-const standardFields = [
-  { key: 'firstName', label: 'First Name', type: 'text' },
-  { key: 'lastName', label: 'Last Name', type: 'text' },
-  { key: 'address1', label: 'Address 1', type: 'text' },
-  { key: 'city', label: 'City', type: 'text' },
-  { key: 'postalCode', label: 'Postcode', type: 'text' },
-  { key: 'phone', label: 'Telephone', type: 'text' },
-  { key: 'email', label: 'Email', type: 'email' },
-  { key: 'source', label: 'Contact Source', type: 'text' },
-];
-
-const customFields = [
-  { key: 'membership_start_date', label: 'Membership Start Date', type: 'date' },
-  { key: 'membership_type', label: 'Membership Type', type: 'select', options: ['Full', 'Associate', 'None', 'Newsletter Only', 'Ex Member'] },
-  { key: 'single_or_double_membership', label: 'Single or Double Membership', type: 'select', options: ['Single', 'Double'] },
-  { key: 'standing_order', label: 'Standing Order', type: 'radio', options: ['Yes', 'No'] },
-  { key: 'renewal_date', label: 'Renewal Date', type: 'date' },
-  { key: 'renewal_reminder', label: 'Renewal Reminder', type: 'select', options: ['No', 'Membership Secretary', 'Member', 'Both'] },
-  { key: 'marketing_email_consent', label: 'Marketing and Email Consent', type: 'select', options: ['Yes', 'No'] },
-  { key: 'gift_aid', label: 'Gift Aid', type: 'radio', options: ['Yes', 'No'] },
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'address2', label: 'Address 2', type: 'text' },
-  { key: 'address3', label: 'Address 3', type: 'text' },
-];
-
-// map GHL field-id  -> your form key
 const FIELD_MAP: Record<string, string> = {
   gH97LlNC9Y4PlkKVlY8V: 'membership_type',
   hJQPtsVDFBxI1USEN83v: 'single_or_double_membership',
@@ -45,44 +29,7 @@ const FIELD_MAP: Record<string, string> = {
   xNIBnbcu4NJ008JLUWGF: 'title',
   PEyv7RkguJ3IwYQdQlkR: 'address2',
   dTKWIDeFBg9MI1MQ65vi: 'address3',
-  // ... add the rest as needed ...
 };
-
-function flattenCustomFields(contact: any) {
-  const flat: Record<string, any> = {};
-  const cf = contact.customField;
-
-  if (!cf) return flat;
-
-  /* 1. object { id: value } */
-  if (!Array.isArray(cf)) {
-    Object.entries(cf).forEach(([id, value]) => {
-      const key = FIELD_MAP[id];
-      if (key) flat[key] = value;
-    });
-    return flat;
-  }
-
-  /* 2. array [{ id, value }] */
-  cf.forEach((item: any) => {
-    const key = FIELD_MAP[item.id];
-    if (key) flat[key] = item.value;
-  });
-
-  return flat;
-}
-
-function fuzzyMatch(str: string, query: string) {
-  return str.toLowerCase().includes(query.toLowerCase());
-}
-
-function sortContacts(a: any, b: any) {
-  // use lastName → firstName; fall back to contactName; finally to email
-  return  (a.lastName  || '').localeCompare(b.lastName  || '', 'en', {sensitivity:'base'}) ||
-          (a.firstName || '').localeCompare(b.firstName || '', 'en', {sensitivity:'base'}) ||
-          (a.contactName||'').localeCompare(b.contactName||'', 'en', {sensitivity:'base'}) ||
-          (a.email      || '').localeCompare(b.email      || '', 'en', {sensitivity:'base'});
-}
 
 async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let allContacts: any[] = [];
@@ -96,23 +43,19 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     const contacts = data.contacts || [];
-    console.log(`Fetched page ${page}, got ${contacts.length} contacts`);
     // Filter out duplicates
     const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
     newContacts.forEach((c: any) => seenIds.add(c.id));
     allContacts = allContacts.concat(newContacts);
-    
-    // Check if we've reached the last page
     const { page: currentPage, totalPages } = data.pagination;
     hasMore = currentPage < totalPages;
     if (!hasMore) break;
-    
     page++;
   }
-  console.log(`Total contacts fetched: ${allContacts.length}`);
   return allContacts;
 }
 
+<<<<<<< HEAD
 const fieldOrder = [
   { key: 'firstName',  type: 'standard' },
   { key: 'lastName',   type: 'standard' },
@@ -148,27 +91,32 @@ function isMember(mt: string | null | undefined): boolean {
 }
 
 // Tell Next.js this page is always dynamic
+=======
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [showMembersOnly, setShowMembersOnly] = useState(false);
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useLocalStorageMembershipTypeFilter();
   const [allContacts, setAllContacts] = useState<any[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
   const [contactsError, setContactsError] = useState<string | null>(null);
+
+  // Dropdown selection (trimmed contact object)
   const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [form, setForm] = useState<any>({});
-  const [note, setNote] = useState('');
-  const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);
+  // Full contact record for the form
+  const [fullContact, setFullContact] = useState<any | null>(null);
+
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string|null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
+  // Fetch all contacts for dropdown/search
   useEffect(() => {
     if (!session) {
       router.push('/login');
@@ -179,6 +127,7 @@ export default function Home() {
       setContactsError(null);
       try {
         const contacts = await fetchAllContactsFromAPI();
+<<<<<<< HEAD
 
         const trimmed = contacts.map((c: any) => {
           let membershipType = c.membershipType;
@@ -214,6 +163,17 @@ export default function Home() {
           };
         });
 
+=======
+        // Only keep minimal info for the dropdown/search/filter
+        const trimmed = contacts.map((c: any) => ({
+          id: c.id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          contactName: c.name,
+          membershipType: c.membershipType
+        }));
+>>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
         trimmed.sort(sortContacts);
         setAllContacts(trimmed);
       } catch (err: any) {
@@ -225,23 +185,17 @@ export default function Home() {
     fetchAllContacts();
   }, [session, router]);
 
-  // Client-side fuzzy search and filter
+  // Filter contacts for dropdown/search
   useEffect(() => {
     let filtered = allContacts;
-
-    // Apply member filter first
-    if (showMembersOnly) {
-      console.log('Filtering members. Total contacts:', allContacts.length);
-      filtered = filtered.filter(c => {
-        const membershipType = c.membershipType;
-        const isMemberResult = isMember(membershipType);
-        console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType, 'Is Member:', isMemberResult);
-        return isMemberResult;
+    if (selectedMembershipTypes.length > 0) {
+      filtered = filtered.filter((c) => {
+        const mt = (c.membershipType || "").trim().toLowerCase();
+        return selectedMembershipTypes.some(sel =>
+          mt === sel.toLowerCase()
+        );
       });
-      console.log('After member filter:', filtered.length, 'contacts');
     }
-
-    // Then apply search filter
     if (search.trim()) {
       filtered = filtered.filter(c =>
         fuzzyMatch(c.firstName || '', search) ||
@@ -250,92 +204,34 @@ export default function Home() {
         fuzzyMatch(c.email || '', search)
       );
     }
-
     setFilteredContacts(filtered);
-  }, [search, allContacts, showMembersOnly]);
+  }, [search, allContacts, selectedMembershipTypes]);
 
-  // Fetch contact details and note when selectedContact changes
+  // Fetch full contact record when selection changes
   useEffect(() => {
     if (!selectedContact) {
-      setForm({});
-      setNote('');
-      setNotes([]);
+      setFullContact(null);
       setSaveOk(false);
       setSaveError(null);
+      setDetailsError(null);
       return;
     }
     setDetailsLoading(true);
     setDetailsError(null);
-    setSaveOk(false);      // reset Saved! message
-    setSaveError(null);    // reset error message
-    Promise.all([
-      fetch(`/api/contact/${selectedContact.id}`).then(async r => {
+    setSaveOk(false);
+    setSaveError(null);
+    fetch(`/api/contact/${selectedContact.id}`)
+      .then(async r => {
         if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch contact');
         return r.json();
-      }),
-      fetch(`/api/contact/${selectedContact.id}/notes`).then(async r => {
-        if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch notes');
-        return r.json();
-      }),
-    ])
-      .then(([contact, notesData]) => {
-        if (contact.error) throw new Error(contact.error);
-        // Merge custom fields into form state
-        setForm({ ...contact, ...flattenCustomFields(contact) });
-        setNotes(notesData?.notes || []);
+      })
+      .then((contact) => {
+        setFullContact(contact);
       })
       .catch(err => setDetailsError(err.message))
       .finally(() => setDetailsLoading(false));
   }, [selectedContact]);
 
-  function buildPayload(form: any) {
-    const out: any = {};
-
-    // 1. standard fields
-    standardFields.forEach(f => {
-      if (form[f.key] !== undefined && form[f.key] !== '') out[f.key] = form[f.key];
-    });
-
-    // 2. custom fields as object { id: value }
-    const cf: Record<string, any> = {};
-    Object.entries(FIELD_MAP).forEach(([id, key]) => {
-      if (form[key] !== undefined && form[key] !== '') cf[id] = form[key];
-    });
-    if (Object.keys(cf).length) out.customField = cf;
-
-    return out;
-  }
-
-  async function safeJson(res: Response) {
-    const text = await res.text();
-    return text ? JSON.parse(text) : null;
-  }
-  
-  const handleUpdate = async (payload: any) => {
-    if (!selectedContact) return;
-
-    try {
-      const res = await fetch(`/api/contacts/${selectedContact.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to update contact');
-      }
-
-      const updatedContact = await res.json();
-      setAllContacts(allContacts.map(c => c.id === updatedContact.id ? updatedContact : c));
-      setSelectedContact(updatedContact);
-      setShowMembersOnly(false);
-      setSaveOk(true);
-    } catch (error) {
-      console.error('Error updating contact:', error);
-      setSaveError('Failed to update contact');
-    }
-  };
-  
   if (!session) return null;
   if (contactsLoading) return <div className="p-4">Loading...</div>;
   if (contactsError) return <div className="p-4 text-red-500">{contactsError}</div>;
@@ -348,15 +244,10 @@ export default function Home() {
       <div className="w-full max-w-2xl mb-8">
         <div className="flex justify-between items-center mb-4">
           <label htmlFor="search" className="block text-lg font-semibold">Search Contacts</label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showMembersOnly}
-              onChange={e => setShowMembersOnly(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-lg font-semibold">Show Members Only</span>
-          </label>
+          <MembershipTypeFilterPanel
+            selected={selectedMembershipTypes}
+            onChange={setSelectedMembershipTypes}
+          />
         </div>
         <input
           id="search"
@@ -377,7 +268,7 @@ export default function Home() {
             value={selectedContact?.id || ''}
             onChange={e => {
               const contact = filteredContacts.find(c => c.id === e.target.value);
-              setSelectedContact(contact);
+              setSelectedContact(contact || null);
             }}
             aria-label="Select contact"
             disabled={contactsLoading}
@@ -392,135 +283,46 @@ export default function Home() {
           </select>
         </div>
       </div>
-      {selectedContact && (
-        <form className="w-full max-w-2xl bg-gray-100 p-6 rounded-lg border-2 border-black mb-8" style={{ fontSize: '1.25rem' }}>
-          <h2 className="text-2xl font-bold mb-4">Edit Contact Details</h2>
-          {detailsLoading && <div className="text-lg text-blue-700 mb-2">Loading details...</div>}
-          {detailsError && <div className="text-lg text-red-700 mb-2">{detailsError}</div>}
-          {fieldOrder.map(field => {
-            if (field.type === 'standard') {
-              const f = standardFields.find(sf => sf.key === field.key);
-              if (!f) return null;
-              return (
-                <div className="mb-4" key={f.key}>
-                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
-                  <input
-                    id={f.key}
-                    type={f.type}
-                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                    value={form[f.key] || ''}
-                    onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                    aria-label={f.label}
-                    disabled={detailsLoading}
-                  />
-                </div>
+      {selectedContact && fullContact && (
+        <FullContactEditForm
+          contact={fullContact}
+          saving={detailsLoading || saving}
+          error={saveError}
+          onSave={async (payload) => {
+            setSaving(true);
+            setSaveError(null);
+            try {
+              const res = await fetch(`/api/contacts/${selectedContact.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              if (!res.ok) throw new Error('Failed to update contact');
+              const updatedContact = await res.json();
+
+              // Update allContacts with the updated record (for dropdown/filter)
+              setAllContacts((prev) =>
+                prev.map((c) => (c.id === updatedContact.id ? {
+                  ...c,
+                  // Only update the fields we keep in the list
+                  firstName: updatedContact.firstName,
+                  lastName: updatedContact.lastName,
+                  email: updatedContact.email,
+                  contactName: updatedContact.name,
+                  membershipType: updatedContact.membershipType
+                } : c))
               );
+              // Update local fullContact for the form
+              setFullContact(updatedContact);
+
+              setSaveOk(true);
+            } catch (error) {
+              setSaveError('Failed to update contact');
+            } finally {
+              setSaving(false);
             }
-            if (field.type === 'custom') {
-              const f = customFields.find(cf => cf.key === field.key);
-              if (!f) return null;
-              return (
-                <div className="mb-4" key={f.key}>
-                  <label className="block font-semibold mb-1" htmlFor={f.key}>{f.label}</label>
-                  {f.type === 'text' || f.type === 'date' ? (
-                    <input
-                      id={f.key}
-                      type={f.type}
-                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                      value={form[f.key] || ''}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                      aria-label={f.label}
-                      disabled={detailsLoading}
-                    />
-                  ) : f.type === 'select' ? (
-                    <select
-                      id={f.key}
-                      className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                      value={form[f.key] || ''}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                      aria-label={f.label}
-                      disabled={detailsLoading}
-                    >
-                      <option value="">-- Select --</option>
-                      {f.options?.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : f.type === 'radio' ? (
-                    <div className="flex gap-6">
-                      {f.options?.map(opt => (
-                        <label key={opt} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={f.key}
-                            value={opt}
-                            checked={form[f.key] === opt}
-                            onChange={() => setForm({ ...form, [f.key]: opt })}
-                            aria-label={opt}
-                            disabled={detailsLoading}
-                          />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            }
-            if (field.type === 'notes') {
-              return (
-                <div className="mb-6" key="notes">
-                  <label className="block font-semibold mb-1" htmlFor="note">Add New Note</label>
-                  <textarea
-                    id="note"
-                    className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400 text-xl mb-4"
-                    rows={4}
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    aria-label="New note"
-                    disabled={detailsLoading}
-                    placeholder="Type your new note here..."
-                  />
-                  
-                  <div className="mt-6">
-                    <h3 className="text-xl font-semibold mb-2">Previous Notes</h3>
-                    <div className="max-h-96 overflow-y-auto border-2 border-black rounded-lg p-4">
-                      {notes.length === 0 ? (
-                        <p className="text-gray-600 italic">No previous notes</p>
-                      ) : (
-                        <div className="space-y-4">
-                          {notes.map((note) => (
-                            <div key={note.id} className="border-b border-gray-300 pb-4 last:border-0">
-                              <p className="whitespace-pre-wrap">{note.body}</p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {new Date(note.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })}
-          <button
-            type="button"
-            onClick={() => handleUpdate(buildPayload(form))}
-            className={`w-full py-4 rounded-lg text-2xl font-bold focus:outline-none
-                        focus:ring-4 focus:ring-blue-400
-                        ${detailsLoading || saving
-                           ? 'bg-gray-400 cursor-not-allowed'
-                           : 'bg-blue-700 text-white hover:bg-blue-800'}`}
-            disabled={detailsLoading || saving}
-          >
-            {saving ? 'Saving…' : 'Update Contact'}
-          </button>
-          {saveError && <div className="text-red-700 mt-2">{saveError}</div>}
-          {saveOk     && <div className="text-green-700 mt-2">Saved!</div>}
-        </form>
+          }}
+        />
       )}
     </main>
   );

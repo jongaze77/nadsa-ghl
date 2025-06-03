@@ -108,10 +108,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         username,
-        password, // Note: In production, you should hash the password
+        password: hashedPassword,
         role: role || 'user',
       },
     });

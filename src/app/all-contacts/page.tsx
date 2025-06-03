@@ -293,9 +293,9 @@ function EditContactModal({
 
   useEffect(() => {
     if (contact) {
-      let f = { ...contact };
+      const f = { ...contact };
       if (contact.customFields) {
-        let cf = contact.customFields;
+        const cf = contact.customFields;
         if (Array.isArray(cf)) {
           cf.forEach((field: any) => {
             if (field.id && field.value !== undefined) {

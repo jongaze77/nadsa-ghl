@@ -36,9 +36,9 @@ export default function EditContactClient({
 
   useEffect(() => {
     if (contact) {
-      let f = { ...contact };
+      const f = { ...contact };
       if (contact.customFields) {
-        let cf = contact.customFields;
+        const cf = contact.customFields;
         if (Array.isArray(cf)) {
           (cf as unknown as CustomField[]).forEach((field) => {
             if (field.id && field.value !== undefined) {

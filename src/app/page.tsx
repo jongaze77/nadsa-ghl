@@ -1,35 +1,14 @@
+// src/app/page.tsx
+
 'use client'
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-<<<<<<< HEAD
-import Link from 'next/link';
-=======
-import {
-  fuzzyMatch,
-  sortContacts
-} from '@/lib/contact-filter';
 import MembershipTypeFilterPanel from "@/components/MembershipTypeFilterPanel";
 import { useLocalStorageMembershipTypeFilter } from "@/lib/useLocalStorageMembershipTypeFilter";
 import FullContactEditForm from '@/components/FullContactEditForm';
->>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
-
-const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
-
-const FIELD_MAP: Record<string, string> = {
-  gH97LlNC9Y4PlkKVlY8V: 'membership_type',
-  hJQPtsVDFBxI1USEN83v: 'single_or_double_membership',
-  w52V1FONYrhH0LUqDjBs: 'membership_start_date',
-  cWMPNiNAfReHOumOhBB2: 'renewal_date',
-  ojKOz9HxslwVJaBMqcAF: 'renewal_reminder',
-  vJKGn7dzbGmmLUfzp0KY: 'standing_order',
-  ABzFclt09Z30eBalbPKH: 'gift_aid',
-  YvpMtidXnXFqJnii5sqH: 'marketing_email_consent',
-  xNIBnbcu4NJ008JLUWGF: 'title',
-  PEyv7RkguJ3IwYQdQlkR: 'address2',
-  dTKWIDeFBg9MI1MQ65vi: 'address3',
-};
+import { fuzzyMatch, sortContacts } from '@/lib/contact-filter';
 
 async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let allContacts: any[] = [];
@@ -43,7 +22,6 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     const contacts = data.contacts || [];
-    // Filter out duplicates
     const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
     newContacts.forEach((c: any) => seenIds.add(c.id));
     allContacts = allContacts.concat(newContacts);
@@ -55,44 +33,6 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   return allContacts;
 }
 
-<<<<<<< HEAD
-const fieldOrder = [
-  { key: 'firstName',  type: 'standard' },
-  { key: 'lastName',   type: 'standard' },
-  { key: 'title',      type: 'custom'   },
-  { key: 'address1',   type: 'standard' },
-  { key: 'address2',   type: 'custom'   },
-  { key: 'address3',   type: 'custom'   },
-  { key: 'city',       type: 'standard' },
-  { key: 'postalCode', type: 'standard' },
-  { key: 'phone',      type: 'standard' },
-  { key: 'email',      type: 'standard' },
-  { key: 'source',     type: 'standard' },
-  { key: 'membership_start_date', type: 'custom' },
-  { key: 'membership_type', type: 'custom' },
-  { key: 'single_or_double_membership', type: 'custom' },
-  { key: 'standing_order', type: 'custom' },
-  { key: 'renewal_date', type: 'custom' },
-  { key: 'renewal_reminder', type: 'custom' },
-  { key: 'marketing_email_consent', type: 'custom' },
-  { key: 'gift_aid', type: 'custom' },
-  { key: 'notes', type: 'notes' },
-];
-
-function normalizeMembershipType(mt: string | null | undefined): string {
-  if (!mt) return '';
-  return mt.trim().toLowerCase().replace(/member$/i, '').trim();
-}
-
-function isMember(mt: string | null | undefined): boolean {
-  if (!mt) return false;
-  const type = mt.trim().toUpperCase();
-  return ['F', 'A'].includes(type);
-}
-
-// Tell Next.js this page is always dynamic
-=======
->>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
@@ -105,9 +45,7 @@ export default function Home() {
   const [contactsLoading, setContactsLoading] = useState(true);
   const [contactsError, setContactsError] = useState<string | null>(null);
 
-  // Dropdown selection (trimmed contact object)
   const [selectedContact, setSelectedContact] = useState<any>(null);
-  // Full contact record for the form
   const [fullContact, setFullContact] = useState<any | null>(null);
 
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -116,7 +54,6 @@ export default function Home() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
-  // Fetch all contacts for dropdown/search
   useEffect(() => {
     if (!session) {
       router.push('/login');
@@ -127,44 +64,6 @@ export default function Home() {
       setContactsError(null);
       try {
         const contacts = await fetchAllContactsFromAPI();
-<<<<<<< HEAD
-
-        const trimmed = contacts.map((c: any) => {
-          let membershipType = c.membershipType;
-          
-          if (c.customFields) {
-            if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
-              membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
-            } else if (Array.isArray(c.customFields)) {
-              const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
-              if (membershipField) {
-                membershipType = membershipField.value;
-              }
-            }
-          }
-
-          // Convert membership type to initial
-          let membershipInitial = '';
-          if (membershipType) {
-            const type = membershipType.trim().toLowerCase();
-            if (type.startsWith('full')) membershipInitial = 'F';
-            else if (type.startsWith('associate')) membershipInitial = 'A';
-            else if (type.startsWith('newsletter')) membershipInitial = 'N';
-            else if (type.startsWith('ex')) membershipInitial = 'E';
-          }
-          
-          return {
-            id: c.id,
-            firstName: c.firstName,
-            lastName: c.lastName,
-            email: c.email,
-            contactName: c.name,
-            membershipType: membershipInitial
-          };
-        });
-
-=======
-        // Only keep minimal info for the dropdown/search/filter
         const trimmed = contacts.map((c: any) => ({
           id: c.id,
           firstName: c.firstName,
@@ -173,7 +72,6 @@ export default function Home() {
           contactName: c.name,
           membershipType: c.membershipType
         }));
->>>>>>> 9cfeb25c75d49bc817945a2c3825691dc80655d5
         trimmed.sort(sortContacts);
         setAllContacts(trimmed);
       } catch (err: any) {
@@ -185,7 +83,6 @@ export default function Home() {
     fetchAllContacts();
   }, [session, router]);
 
-  // Filter contacts for dropdown/search
   useEffect(() => {
     let filtered = allContacts;
     if (selectedMembershipTypes.length > 0) {
@@ -207,7 +104,6 @@ export default function Home() {
     setFilteredContacts(filtered);
   }, [search, allContacts, selectedMembershipTypes]);
 
-  // Fetch full contact record when selection changes
   useEffect(() => {
     if (!selectedContact) {
       setFullContact(null);
@@ -300,11 +196,9 @@ export default function Home() {
               if (!res.ok) throw new Error('Failed to update contact');
               const updatedContact = await res.json();
 
-              // Update allContacts with the updated record (for dropdown/filter)
               setAllContacts((prev) =>
                 prev.map((c) => (c.id === updatedContact.id ? {
                   ...c,
-                  // Only update the fields we keep in the list
                   firstName: updatedContact.firstName,
                   lastName: updatedContact.lastName,
                   email: updatedContact.email,
@@ -312,7 +206,6 @@ export default function Home() {
                   membershipType: updatedContact.membershipType
                 } : c))
               );
-              // Update local fullContact for the form
               setFullContact(updatedContact);
 
               setSaveOk(true);

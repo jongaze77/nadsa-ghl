@@ -7,6 +7,7 @@ import { fuzzyMatch } from '@/lib/contact-filter';
 import EditContactClient from '../contacts/[id]/EditContactClient';
 import { Contact } from '@prisma/client';
 import FullContactEditForm from "@/components/FullContactEditForm";
+import { FIELD_MAP } from "@/lib/ghl-api";
 
 
 // Column definitions
@@ -290,14 +291,49 @@ function EditContactModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (contact) {
+      let f = { ...contact };
+      if (contact.customFields) {
+        let cf = contact.customFields;
+        if (Array.isArray(cf)) {
+          cf.forEach((field: any) => {
+            if (field.id && field.value !== undefined) {
+              const mappedKey = FIELD_MAP[field.id] || field.id;
+              (f as any)[mappedKey] = field.value;
+            }
+          });
+        } else if (typeof cf === 'object') {
+          Object.entries(cf).forEach(([key, value]) => {
+            const mappedKey = FIELD_MAP[key] || key;
+            (f as any)[mappedKey] = value;
+          });
+        }
+      }
+      setFormData(f);
+    }
+  }, [contact]);
+
+  // Build payload with empty strings set to null
+  function buildPayload(form: any) {
+    const payload: Record<string, any> = {};
+    Object.keys(form).forEach((key) => {
+      // Always send all fields; use null if blank
+      const value = form[key];
+      payload[key] = value === '' ? null : value;
+    });
+    return payload;
+  }
+
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     try {
+      const payload = buildPayload(formData);
       const response = await fetch(`/api/contacts/${contact.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to update contact');
       onClose();
@@ -312,13 +348,28 @@ function EditContactModal({
     <div>
       <h2 className="text-xl font-bold mb-2">Edit Contact</h2>
       <FullContactEditForm
-        form={formData}
-        setForm={setFormData}
-        saving={saving}
-        error={error}
-        onSave={handleSave}
-        onCancel={onClose}
-      />
+  contact={contact}
+  saving={saving}
+  error={error}
+  onSave={async (payload) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/contacts/${contact.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to update contact");
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setSaving(false);
+    }
+  }}
+  onCancel={onClose}
+/>
     </div>
   );
 }

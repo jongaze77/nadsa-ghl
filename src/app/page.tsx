@@ -5,42 +5,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   fuzzyMatch,
-  normalizeMembershipType,
-  isMember,
   sortContacts
 } from '@/lib/contact-filter';
 import MembershipTypeFilterPanel from "@/components/MembershipTypeFilterPanel";
 import { useLocalStorageMembershipTypeFilter } from "@/lib/useLocalStorageMembershipTypeFilter";
 import FullContactEditForm from '@/components/FullContactEditForm';
 
-const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type
+const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
 
-const standardFields = [
-  { key: 'firstName', label: 'First Name', type: 'text' },
-  { key: 'lastName', label: 'Last Name', type: 'text' },
-  { key: 'address1', label: 'Address 1', type: 'text' },
-  { key: 'city', label: 'City', type: 'text' },
-  { key: 'postalCode', label: 'Postcode', type: 'text' },
-  { key: 'phone', label: 'Telephone', type: 'text' },
-  { key: 'email', label: 'Email', type: 'email' },
-  { key: 'source', label: 'Contact Source', type: 'text' },
-];
-
-const customFields = [
-  { key: 'membership_start_date', label: 'Membership Start Date', type: 'date' },
-  { key: 'membership_type', label: 'Membership Type', type: 'select', options: ['Full', 'Associate', 'None', 'Newsletter Only', 'Ex Member'] },
-  { key: 'single_or_double_membership', label: 'Single or Double Membership', type: 'select', options: ['Single', 'Double'] },
-  { key: 'standing_order', label: 'Standing Order', type: 'radio', options: ['Yes', 'No'] },
-  { key: 'renewal_date', label: 'Renewal Date', type: 'date' },
-  { key: 'renewal_reminder', label: 'Renewal Reminder', type: 'select', options: ['No', 'Membership Secretary', 'Member', 'Both'] },
-  { key: 'marketing_email_consent', label: 'Marketing and Email Consent', type: 'select', options: ['Yes', 'No'] },
-  { key: 'gift_aid', label: 'Gift Aid', type: 'radio', options: ['Yes', 'No'] },
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'address2', label: 'Address 2', type: 'text' },
-  { key: 'address3', label: 'Address 3', type: 'text' },
-];
-
-// map GHL field-id  -> your form key
 const FIELD_MAP: Record<string, string> = {
   gH97LlNC9Y4PlkKVlY8V: 'membership_type',
   hJQPtsVDFBxI1USEN83v: 'single_or_double_membership',
@@ -53,32 +25,7 @@ const FIELD_MAP: Record<string, string> = {
   xNIBnbcu4NJ008JLUWGF: 'title',
   PEyv7RkguJ3IwYQdQlkR: 'address2',
   dTKWIDeFBg9MI1MQ65vi: 'address3',
-  // ... add the rest as needed ...
 };
-
-function flattenCustomFields(contact: any) {
-  const flat: Record<string, any> = {};
-  const cf = contact.customField;
-
-  if (!cf) return flat;
-
-  /* 1. object { id: value } */
-  if (!Array.isArray(cf)) {
-    Object.entries(cf).forEach(([id, value]) => {
-      const key = FIELD_MAP[id];
-      if (key) flat[key] = value;
-    });
-    return flat;
-  }
-
-  /* 2. array [{ id, value }] */
-  cf.forEach((item: any) => {
-    const key = FIELD_MAP[item.id];
-    if (key) flat[key] = item.value;
-  });
-
-  return flat;
-}
 
 async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   let allContacts: any[] = [];
@@ -92,47 +39,18 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     const contacts = data.contacts || [];
-    console.log(`Fetched page ${page}, got ${contacts.length} contacts`);
     // Filter out duplicates
     const newContacts = contacts.filter((c: any) => !seenIds.has(c.id));
     newContacts.forEach((c: any) => seenIds.add(c.id));
     allContacts = allContacts.concat(newContacts);
-    
-    // Check if we've reached the last page
     const { page: currentPage, totalPages } = data.pagination;
     hasMore = currentPage < totalPages;
     if (!hasMore) break;
-    
     page++;
   }
-  console.log(`Total contacts fetched: ${allContacts.length}`);
   return allContacts;
 }
 
-const fieldOrder = [
-  { key: 'firstName',  type: 'standard' },
-  { key: 'lastName',   type: 'standard' },
-  { key: 'title',      type: 'custom'   },
-  { key: 'address1',   type: 'standard' },
-  { key: 'address2',   type: 'custom'   },
-  { key: 'address3',   type: 'custom'   },
-  { key: 'city',       type: 'standard' },
-  { key: 'postalCode', type: 'standard' },
-  { key: 'phone',      type: 'standard' },
-  { key: 'email',      type: 'standard' },
-  { key: 'source',     type: 'standard' },
-  { key: 'membership_start_date', type: 'custom' },
-  { key: 'membership_type', type: 'custom' },
-  { key: 'single_or_double_membership', type: 'custom' },
-  { key: 'standing_order', type: 'custom' },
-  { key: 'renewal_date', type: 'custom' },
-  { key: 'renewal_reminder', type: 'custom' },
-  { key: 'marketing_email_consent', type: 'custom' },
-  { key: 'gift_aid', type: 'custom' },
-  { key: 'notes', type: 'notes' },
-];
-
-// Tell Next.js this page is always dynamic
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
@@ -144,16 +62,19 @@ export default function Home() {
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
   const [contactsError, setContactsError] = useState<string | null>(null);
+
+  // Dropdown selection (trimmed contact object)
   const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [form, setForm] = useState<any>({});
-  const [note, setNote] = useState('');
-  const [notes, setNotes] = useState<Array<{ id: string; body: string; createdAt: string }>>([]);
+  // Full contact record for the form
+  const [fullContact, setFullContact] = useState<any | null>(null);
+
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string|null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
+  // Fetch all contacts for dropdown/search
   useEffect(() => {
     if (!session) {
       router.push('/login');
@@ -163,44 +84,17 @@ export default function Home() {
       setContactsLoading(true);
       setContactsError(null);
       try {
-        /* 1. just fetch the paginated list */
         const contacts = await fetchAllContactsFromAPI();
-
-        /* 2. keep in state ONLY what the list needs (id, names, email) */
-        const trimmed = contacts.map((c: any) => {
-          // Log the full contact object to see its structure
-          console.log('Full contact object:', JSON.stringify(c, null, 2));
-          
-          // Try different ways to access the membership type
-          let membershipType = c.membershipType; // First try direct field
-          
-          // // If not found, try custom fields
-          // if (!membershipType && c.customFields) {
-          //   if (typeof c.customFields === 'object' && !Array.isArray(c.customFields)) {
-          //     membershipType = c.customFields[MEMBERSHIP_TYPE_ID];
-          //   } else if (Array.isArray(c.customFields)) {
-          //     const membershipField = c.customFields.find((cf: any) => cf.id === MEMBERSHIP_TYPE_ID);
-          //     if (membershipField) {
-          //       membershipType = membershipField.value;
-          //     }
-          //   }
-          // }
-          
-          console.log('Contact:', c.firstName, c.lastName, 'Membership Type:', membershipType);
-          
-          return {
-            id: c.id,
-            firstName: c.firstName,
-            lastName: c.lastName,
-            email: c.email,
-            contactName: c.name,
-            membershipType: membershipType
-          };
-        });
-
-        /* 3. sort Surname → First name once */
+        // Only keep minimal info for the dropdown/search/filter
+        const trimmed = contacts.map((c: any) => ({
+          id: c.id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          contactName: c.name,
+          membershipType: c.membershipType
+        }));
         trimmed.sort(sortContacts);
-
         setAllContacts(trimmed);
       } catch (err: any) {
         setContactsError(err.message || 'Failed to load contacts');
@@ -211,22 +105,17 @@ export default function Home() {
     fetchAllContacts();
   }, [session, router]);
 
-  // Client-side fuzzy search and filter
+  // Filter contacts for dropdown/search
   useEffect(() => {
     let filtered = allContacts;
-
-    // Membership type filtering (multi-select)
     if (selectedMembershipTypes.length > 0) {
       filtered = filtered.filter((c) => {
-        // Normalize for comparison (case-insensitive)
         const mt = (c.membershipType || "").trim().toLowerCase();
         return selectedMembershipTypes.some(sel =>
           mt === sel.toLowerCase()
         );
       });
     }
-
-    // Then apply search filter
     if (search.trim()) {
       filtered = filtered.filter(c =>
         fuzzyMatch(c.firstName || '', search) ||
@@ -235,95 +124,34 @@ export default function Home() {
         fuzzyMatch(c.email || '', search)
       );
     }
-
     setFilteredContacts(filtered);
   }, [search, allContacts, selectedMembershipTypes]);
 
-  // Fetch contact details and note when selectedContact changes
+  // Fetch full contact record when selection changes
   useEffect(() => {
     if (!selectedContact) {
-      setForm({});
-      setNote('');
-      setNotes([]);
+      setFullContact(null);
       setSaveOk(false);
       setSaveError(null);
+      setDetailsError(null);
       return;
     }
     setDetailsLoading(true);
     setDetailsError(null);
-    setSaveOk(false);      // reset Saved! message
-    setSaveError(null);    // reset error message
-    Promise.all([
-      fetch(`/api/contact/${selectedContact.id}`).then(async r => {
+    setSaveOk(false);
+    setSaveError(null);
+    fetch(`/api/contact/${selectedContact.id}`)
+      .then(async r => {
         if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch contact');
         return r.json();
-      }),
-      fetch(`/api/contact/${selectedContact.id}/notes`).then(async r => {
-        if (!r.ok) throw new Error((await r.json()).error ?? 'Failed to fetch notes');
-        return r.json();
-      }),
-    ])
-      .then(([contact, notesData]) => {
-        if (contact.error) throw new Error(contact.error);
-        // Merge custom fields into form state
-        setForm({ ...contact, ...flattenCustomFields(contact) });
-        setNotes(notesData?.notes || []);
+      })
+      .then((contact) => {
+        setFullContact(contact);
       })
       .catch(err => setDetailsError(err.message))
       .finally(() => setDetailsLoading(false));
   }, [selectedContact]);
 
-  function buildPayload(form: any) {
-    const out: Record<string, any> = {};
-
-    // 1. standard fields
-    standardFields.forEach(f => {
-      // Always send all fields; use null if blank
-      const value = form[f.key];
-      out[f.key] = value === '' ? null : value;
-    });
-
-    // 2. custom fields as object { id: value }
-    const cf: Record<string, any> = {};
-    Object.entries(FIELD_MAP).forEach(([id, key]) => {
-      // Always send all fields; use null if blank
-      const value = form[key];
-      cf[id] = value === '' ? null : value;
-    });
-    out.customField = cf;
-
-    return out;
-  }
-
-  async function safeJson(res: Response) {
-    const text = await res.text();
-    return text ? JSON.parse(text) : null;
-  }
-  
-  const handleUpdate = async (payload: any) => {
-    if (!selectedContact) return;
-
-    try {
-      const res = await fetch(`/api/contacts/${selectedContact.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to update contact');
-      }
-
-      const updatedContact = await res.json();
-      setAllContacts(allContacts.map(c => c.id === updatedContact.id ? updatedContact : c));
-      setSelectedContact(updatedContact);
-      setSaveOk(true);
-    } catch (error) {
-      console.error('Error updating contact:', error);
-      setSaveError('Failed to update contact');
-    }
-  };
-  
   if (!session) return null;
   if (contactsLoading) return <div className="p-4">Loading...</div>;
   if (contactsError) return <div className="p-4 text-red-500">{contactsError}</div>;
@@ -360,7 +188,7 @@ export default function Home() {
             value={selectedContact?.id || ''}
             onChange={e => {
               const contact = filteredContacts.find(c => c.id === e.target.value);
-              setSelectedContact(contact);
+              setSelectedContact(contact || null);
             }}
             aria-label="Select contact"
             disabled={contactsLoading}
@@ -375,15 +203,46 @@ export default function Home() {
           </select>
         </div>
       </div>
-      {selectedContact && (
+      {selectedContact && fullContact && (
         <FullContactEditForm
-        form={form}
-        setForm={setForm}
-        saving={detailsLoading || saving}
-        error={saveError}
-        onSave={() => handleUpdate(buildPayload(form))}
-        // Optionally: onCancel={() => ...}
-      />
+          contact={fullContact}
+          saving={detailsLoading || saving}
+          error={saveError}
+          onSave={async (payload) => {
+            setSaving(true);
+            setSaveError(null);
+            try {
+              const res = await fetch(`/api/contacts/${selectedContact.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              if (!res.ok) throw new Error('Failed to update contact');
+              const updatedContact = await res.json();
+
+              // Update allContacts with the updated record (for dropdown/filter)
+              setAllContacts((prev) =>
+                prev.map((c) => (c.id === updatedContact.id ? {
+                  ...c,
+                  // Only update the fields we keep in the list
+                  firstName: updatedContact.firstName,
+                  lastName: updatedContact.lastName,
+                  email: updatedContact.email,
+                  contactName: updatedContact.name,
+                  membershipType: updatedContact.membershipType
+                } : c))
+              );
+              // Update local fullContact for the form
+              setFullContact(updatedContact);
+
+              setSaveOk(true);
+            } catch (error) {
+              setSaveError('Failed to update contact');
+            } finally {
+              setSaving(false);
+            }
+          }}
+        />
       )}
     </main>
   );

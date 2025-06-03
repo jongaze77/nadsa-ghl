@@ -1,6 +1,6 @@
 // src/lib/ghl-api.ts
 
-import { Contact } from '@prisma/client';
+import type { Contact } from '.prisma/client';
 
 const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
 const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V"; // Custom field ID for Membership Type

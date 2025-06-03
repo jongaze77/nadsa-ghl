@@ -18,7 +18,7 @@ const COLUMNS = [
   { key: 'phone', label: 'Phone' },
   { key: 'address1', label: 'Address Line 1' },
   { key: 'postalCode', label: 'Postcode' },
-  { key: 'membershipType', label: 'Membership Type' },
+  { key: 'membershipType', label: 'Membership' },
   { key: 'renewal_date', label: 'Renewal Date' },
 ];
 
@@ -26,6 +26,11 @@ type SortState = {
   column: string;
   direction: 'asc' | 'desc';
 };
+
+function truncate(value: any, max = 20) {
+  if (typeof value !== "string") return value;
+  return value.length > max ? value.slice(0, max) + "…" : value;
+}
 
 function getSortFn(column: string, direction: 'asc' | 'desc') {
   return (a: any, b: any) => {
@@ -240,14 +245,14 @@ export default function AllContactsPage() {
                       if (e.key === 'Enter') handleRowClick(contact, e as any);
                     }}
                   >
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.lastName}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.firstName}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.email}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.phone}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.address1}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.postalCode}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.membershipType}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{contact.renewal_date}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.lastName)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.firstName)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.email)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.phone)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.address1)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.postalCode)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.membershipType)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{truncate(contact.renewal_date)}</td>
                   </tr>
                 ))
               )}

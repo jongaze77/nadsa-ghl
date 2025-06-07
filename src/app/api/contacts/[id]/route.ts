@@ -126,7 +126,8 @@ export async function PUT(
 
     // 4. Fetch updated contact from GHL to ensure consistency
     log('🔄 Fetching updated contact from GHL...');
-    const ghlContact = await fetchContactFromGHL(contactId);
+    const raw = await fetchContactFromGHL(contactId);
+    const ghlContact = raw.contact || raw; // <-- FIX HERE
     const prismaData = mapGHLContactToPrisma(ghlContact);
 
     log(`🔄 GHL contact fetched: ${JSON.stringify(ghlContact, null, 2)}`);
@@ -176,7 +177,8 @@ export async function GET(
 
     // 1. Fetch from GHL first
     log('🔄 Fetching contact from GHL...');
-    const ghlContact = await fetchContactFromGHL(contactId);
+    const raw = await fetchContactFromGHL(contactId);
+    const ghlContact = raw.contact || raw; // <-- FIX HERE
     if (!ghlContact) {
       log(`❌ Contact not found in GHL: ${contactId}`);
       return NextResponse.json(
@@ -217,4 +219,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

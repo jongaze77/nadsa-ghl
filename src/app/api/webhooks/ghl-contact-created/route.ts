@@ -4,7 +4,6 @@ import { mapGHLContactToPrisma } from '@/lib/ghl-api';
 import { Prisma } from '@prisma/client';
 
 export async function POST(req: NextRequest) {
-  // Secret check
   const secret = req.headers.get('x-ghl-secret');
   if (secret !== process.env.GHL_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,26 +12,21 @@ export async function POST(req: NextRequest) {
   const ghlContact = await req.json();
   const mapped = mapGHLContactToPrisma(ghlContact);
 
-  // Must have id (from GHL) and it must be a string
   if (!mapped.id || typeof mapped.id !== 'string') {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Defensive: Remove the key if it's null or undefined
-  if (mapped.customFields == null) {
-    delete mapped.customFields;
+  // This is the KEY line:
+  if (mapped.customFields === null || mapped.customFields === undefined) {
+    mapped.customFields = Prisma.NullableJsonNullValueInput.DbNull;
   }
 
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();
   mapped.lastSyncedAt = new Date();
 
-  // Remove undefined fields (especially id)
   const { id, ...rest } = mapped;
-  const data = {
-    id,
-    ...rest,
-  };
+  const data = { id, ...rest };
 
   const contact = await prisma.contact.upsert({
     where: { id },

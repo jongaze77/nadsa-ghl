@@ -25,7 +25,7 @@ model Contact {
   id            String   @id
   firstName     String?
   lastName      String?
-  email         String?
+  email         String? @unique
   phone         String?
   membershipType String?
   createdAt     DateTime @default(now())

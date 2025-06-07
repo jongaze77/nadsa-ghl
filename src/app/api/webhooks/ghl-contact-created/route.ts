@@ -9,28 +9,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const ghlContact = await req.json();
+  // Get and log the full incoming payload for debugging
+  const raw = await req.json();
+  console.log('GHL WEBHOOK RAW BODY:', raw);
+
+  // Expect the full contact object under the 'contact' key
+  const ghlContact = raw.contact;
+  if (!ghlContact) {
+    return NextResponse.json({ error: 'Missing contact object in webhook payload.' }, { status: 400 });
+  }
+
   const mapped = mapGHLContactToPrisma(ghlContact);
 
   if (!mapped.id || typeof mapped.id !== 'string') {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Only assign customFields if it's present, otherwise use DbNull
-  const data: Prisma.ContactCreateInput = {
-    id: mapped.id,
-    ...mapped,
-    customFields:
-      mapped.customFields === undefined || mapped.customFields === null
-        ? Prisma.DbNull
-        : mapped.customFields,
-    updatedAt: new Date(),
-    createdAt: mapped.createdAt ? mapped.createdAt : new Date(),
-    lastSyncedAt: new Date(),
-  };
+  // Only assign customFields if it's present, otherwise use DbNull (or just delete if you prefer)
+  if (mapped.customFields === undefined || mapped.customFields === null) {
+    delete mapped.customFields; // safest for type compatibility
+  }
+
+  mapped.updatedAt = new Date();
+  if (!mapped.createdAt) mapped.createdAt = new Date();
+  mapped.lastSyncedAt = new Date();
+
+  const { id, ...rest } = mapped;
+  const data = {
+    id,
+    ...rest,
+    customFields: mapped.customFields ?? Prisma.JsonNull,
+  } satisfies Prisma.ContactCreateInput;
 
   const contact = await prisma.contact.upsert({
-    where: { id: mapped.id },
+    where: { id },
     update: data,
     create: data,
   });

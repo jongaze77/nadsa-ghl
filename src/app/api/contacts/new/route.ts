@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getApiKey, mapGHLContactToPrisma } from '@/lib/ghl-api';
+import type { Prisma } from '.prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,18 +84,17 @@ export async function POST(req: NextRequest) {
   // === 2. Create contact in local DB, using GHL data ===
   const mapped = mapGHLContactToPrisma(ghlContact);
 
-  const data = {
-    ...mapped,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSyncedAt: new Date(),
-  };
-  
-  if (data.id === undefined) {
-    delete data.id;
-  }
-  
-  const contact = await prisma.contact.create({ data });
+const data = {
+  ...mapped,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  lastSyncedAt: new Date(),
+};
+if (data.id === undefined) {
+  delete data.id;
+}
 
-  return NextResponse.json(contact);
+const contact = await prisma.contact.create({ data: data as Prisma.ContactCreateInput });
+
+return NextResponse.json(contact);
 }

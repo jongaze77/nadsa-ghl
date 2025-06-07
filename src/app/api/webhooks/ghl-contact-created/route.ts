@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { mapGHLContactToPrisma } from '@/lib/ghl-api';
-import type { Prisma } from '.prisma/client';
+import { Prisma } from '@prisma/client';
 
 export async function POST(req: NextRequest) {
   // Secret check
@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-// Use DbNull for explicit nulls, or just delete the property
-if (mapped.customFields == null) {
-  delete mapped.customFields;
-}
+  // Prisma requires: customFields is JSON, Prisma.DbNull, or undefined (not plain null)
+  if (mapped.customFields === null || mapped.customFields === undefined) {
+    delete mapped.customFields; // or mapped.customFields = Prisma.DbNull;
+  }
 
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();
@@ -29,10 +29,11 @@ if (mapped.customFields == null) {
 
   // Remove undefined fields (especially id)
   const { id, ...rest } = mapped;
+  // DO NOT use "as const" here!
   const data = {
     id,
     ...rest,
-  } as const;
+  };
 
   const contact = await prisma.contact.upsert({
     where: { id },

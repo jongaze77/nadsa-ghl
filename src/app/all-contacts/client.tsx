@@ -113,7 +113,15 @@ function getSortFn(column: string, direction: 'asc' | 'desc') {
 }
 
 // EditContactModal component
-function EditContactModal({ contact, onClose }: { contact: any; onClose: () => void }) {
+function EditContactModal({
+  contact,
+  onClose,
+  onSaved,
+}: {
+  contact: any;
+  onClose: () => void;
+  onSaved: (updatedContact: any) => void;
+}) {
   const [fullContact, setFullContact] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -143,6 +151,8 @@ function EditContactModal({ contact, onClose }: { contact: any; onClose: () => v
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to update contact');
+      const updated = await response.json();
+      onSaved(updated);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -300,6 +310,13 @@ export default function ContactsClient() {
     );
   }
 
+  // Add this handler:
+  const handleContactSaved = (updatedContact: any) => {
+    setContacts(prev =>
+      prev.map(c => c.id === updatedContact.id ? { ...c, ...updatedContact } : c)
+    );
+  };
+
   if (status === 'loading') {
     return <div className="p-4">Loading session...</div>;
   }
@@ -408,7 +425,11 @@ export default function ContactsClient() {
       {/* Modal for inline edit */}
       {selectedContact && (
         <Modal onClose={() => setSelectedContact(null)}>
-          <EditContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
+          <EditContactModal
+            contact={selectedContact}
+            onClose={() => setSelectedContact(null)}
+            onSaved={handleContactSaved}
+          />
         </Modal>
       )}
     </main>

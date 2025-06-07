@@ -83,14 +83,18 @@ export async function POST(req: NextRequest) {
   // === 2. Create contact in local DB, using GHL data ===
   const mapped = mapGHLContactToPrisma(ghlContact);
 
-  const contact = await prisma.contact.create({
-    data: {
-      ...mapped,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastSyncedAt: new Date(),
-    },
-  });
+  const data = {
+    ...mapped,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSyncedAt: new Date(),
+  };
+  
+  if (data.id === undefined) {
+    delete data.id;
+  }
+  
+  const contact = await prisma.contact.create({ data });
 
   return NextResponse.json(contact);
 }

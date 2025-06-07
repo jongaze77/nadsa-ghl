@@ -16,20 +16,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // This is the KEY line:
-  if (mapped.customFields === null || mapped.customFields === undefined) {
-    mapped.customFields = Prisma.NullableJsonNullValueInput.DbNull;
-  }
-
-  mapped.updatedAt = new Date();
-  if (!mapped.createdAt) mapped.createdAt = new Date();
-  mapped.lastSyncedAt = new Date();
-
-  const { id, ...rest } = mapped;
-  const data = { id, ...rest };
+  // Only assign customFields if it's present, otherwise use DbNull
+  const data: Prisma.ContactCreateInput = {
+    id: mapped.id,
+    ...mapped,
+    customFields:
+      mapped.customFields === undefined || mapped.customFields === null
+        ? Prisma.DbNull
+        : mapped.customFields,
+    updatedAt: new Date(),
+    createdAt: mapped.createdAt ? mapped.createdAt : new Date(),
+    lastSyncedAt: new Date(),
+  };
 
   const contact = await prisma.contact.upsert({
-    where: { id },
+    where: { id: mapped.id },
     update: data,
     create: data,
   });

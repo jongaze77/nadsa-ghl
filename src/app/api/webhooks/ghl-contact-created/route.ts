@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { mapGHLContactToPrisma } from '@/lib/ghl-api';
-import type { Prisma } from '.prisma/client';
+import { Prisma } from '.prisma/client';
 
 export async function POST(req: NextRequest) {
   // Secret check
@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Clean up fields
-  if (mapped.customFields === null) mapped.customFields = undefined;
+  // Fix for Prisma JSON input:
+  if (mapped.customFields === null) mapped.customFields = Prisma.JsonNull;
+
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();
   mapped.lastSyncedAt = new Date();
@@ -31,7 +32,6 @@ export async function POST(req: NextRequest) {
     ...rest,
   };
 
-  // Upsert by id (id is always required and unique)
   const contact = await prisma.contact.upsert({
     where: { id },
     update: data,

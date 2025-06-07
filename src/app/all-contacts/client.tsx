@@ -98,7 +98,7 @@ const COLUMNS = [
   { key: 'phone', label: 'Phone' },
   { key: 'address1', label: 'Address' },
   { key: 'postalCode', label: 'Postcode' },
-  { key: 'membershipType', label: 'Membership Type' },
+  { key: 'membershipType', label: 'Type' },
   { key: 'renewal_date', label: 'Renewal Date' },
 ];
 
@@ -285,7 +285,7 @@ export default function ContactsClient() {
     <main className="min-h-screen bg-gray-50 p-4 flex flex-col items-center">
       <div className="w-full max-w-6xl flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">All Contacts</h1>
-        <div>DEBUG: I am here</div>
+        
         <Link
           href="/contacts/new"
           className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"

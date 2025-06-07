@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '.prisma/client';
 import { fetchAllContactsFromGHL, mapGHLContactToPrisma, fetchContactFromGHL } from '../lib/ghl-api';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '.prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +19,13 @@ async function main() {
     const allContacts: any[] = [];
 
     while (hasMore) {
-      const response = await fetchAllContactsFromGHL(page, limit);
+      let response;
+      try {
+        response = await fetchAllContactsFromGHL(page, limit);
+      } catch (e) {
+        console.error(`❌ Error fetching contacts from GHL on page ${page}: ${e instanceof Error ? e.message : e}`);
+        break;
+      }
       const contacts = response.contacts || [];
       if (contacts.length === 0) break;
       allContacts.push(...contacts);
@@ -44,28 +50,34 @@ async function main() {
       }
       let correctGhlContact = contact;
       try {
+        // This fetch gets the most up-to-date/correct contact from GHL
         correctGhlContact = await fetchContactFromGHL(contact.id);
       } catch (e) {
         console.warn(
-          `  ⚠️  Couldn't fetch case-corrected GHL contact for id ${contact.id}, using paged data`
+          `  ⚠️  Couldn't fetch full GHL contact for id ${contact.id}, using paged data`
         );
         totalErrors++;
       }
       try {
-        const prismaContact = mapGHLContactToPrisma(correctGhlContact);
+        // Defensive: If GHL API returns {contact: {...}}, unwrap it
+        const source = correctGhlContact.contact || correctGhlContact;
+
+        // Map GHL data to Prisma
+        const prismaContact = mapGHLContactToPrisma(source);
         const existingContact = await prisma.contact.findUnique({
-          where: { id: contact.id }
+          where: { id: source.id }
         });
 
         const contactData = {
           ...prismaContact,
-          id: contact.id,
-          customFields: prismaContact.customFields as Prisma.InputJsonValue
+          id: source.id,
+          customFields: prismaContact.customFields as Prisma.InputJsonValue,
+          lastSyncedAt: new Date(),
         };
 
         if (existingContact) {
           await prisma.contact.update({
-            where: { id: contact.id },
+            where: { id: source.id },
             data: contactData
           });
           totalUpdated++;
@@ -83,7 +95,7 @@ async function main() {
       }
     }
 
-    console.log('Sync completed successfully!');
+    console.log('Sync completed.');
     console.log(`Created: ${totalCreated}`);
     console.log(`Updated: ${totalUpdated}`);
     console.log(`Errors: ${totalErrors}`);

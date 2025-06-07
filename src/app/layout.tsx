@@ -8,8 +8,8 @@ import Providers from "@/components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GHL Client Manager",
-  description: "Manage your Go High Level client records",
+  title: "nadsa Members Editor",
+  description: "Manage nadsa membership records",
 };
 
 export default function RootLayout({

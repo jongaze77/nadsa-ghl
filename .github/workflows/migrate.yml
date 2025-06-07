@@ -1,0 +1,21 @@
+name: Migrate Production DB
+
+on:
+  workflow_dispatch:         # Allows you to run this manually
+  # Optionally, also on push to main:
+  # push:
+  #   branches: [main]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Run Prisma Migrate Deploy
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

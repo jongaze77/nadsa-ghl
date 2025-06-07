@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { mapGHLContactToPrisma } from '@/lib/ghl-api';
-import { Prisma } from '.prisma/client';
+import { Prisma } from '@prisma/client'; 
 
 export async function POST(req: NextRequest) {
   // Secret check

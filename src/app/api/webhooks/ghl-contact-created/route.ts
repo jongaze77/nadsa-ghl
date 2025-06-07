@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { mapGHLContactToPrisma } from '@/lib/ghl-api';
+import type { Prisma } from '.prisma/client';
 
 export async function POST(req: NextRequest) {
-  // Check webhook secret
+  // Secret check
   const secret = req.headers.get('x-ghl-secret');
   if (secret !== process.env.GHL_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -12,33 +13,29 @@ export async function POST(req: NextRequest) {
   const ghlContact = await req.json();
   const mapped = mapGHLContactToPrisma(ghlContact);
 
-  // 1. Ensure email exists and is string
-  if (!mapped.email || typeof mapped.email !== 'string') {
-    return NextResponse.json({ error: 'Contact email is required for upsert.' }, { status: 400 });
+  // Must have id (from GHL) and it must be a string
+  if (!mapped.id || typeof mapped.id !== 'string') {
+    return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // 2. Clean up fields for Prisma
-  // Remove id if undefined
-  if (typeof mapped.id === 'undefined') {
-    delete mapped.id;
-  }
-
-  // If you have fields like customFields that could be null, 
-  // and Prisma expects undefined, set to undefined instead of null:
-  if (mapped.customFields === null) {
-    mapped.customFields = undefined;
-  }
-
-  // Add timestamps or any additional fields needed for your schema
+  // Clean up fields
+  if (mapped.customFields === null) mapped.customFields = undefined;
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();
   mapped.lastSyncedAt = new Date();
 
-  // 3. Upsert by email (assuming email is unique in your Prisma schema)
+  // Remove undefined fields (especially id)
+  const { id, ...rest } = mapped;
+  const data: Prisma.ContactCreateInput = {
+    id,
+    ...rest,
+  };
+
+  // Upsert by id (id is always required and unique)
   const contact = await prisma.contact.upsert({
-    where: { email: mapped.email },
-    update: mapped,
-    create: mapped,
+    where: { id },
+    update: data,
+    create: data,
   });
 
   return NextResponse.json({ ok: true, contact });

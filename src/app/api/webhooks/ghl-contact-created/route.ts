@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Prisma requires: customFields is JSON, Prisma.DbNull, or undefined (not plain null)
-  if (mapped.customFields === null || mapped.customFields === undefined) {
-    delete mapped.customFields; // or mapped.customFields = Prisma.DbNull;
+  // Defensive: Remove the key if it's null or undefined
+  if (mapped.customFields == null) {
+    delete mapped.customFields;
   }
 
   mapped.updatedAt = new Date();
@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
 
   // Remove undefined fields (especially id)
   const { id, ...rest } = mapped;
-  // DO NOT use "as const" here!
   const data = {
     id,
     ...rest,

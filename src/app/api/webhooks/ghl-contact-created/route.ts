@@ -12,14 +12,13 @@ export async function POST(req: NextRequest) {
   const raw = await req.json();
   console.log('GHL WEBHOOK RAW BODY:', raw);
 
-  // Try to get the id from contact_id or customData.id
+  // Extract id from contact_id or customData.id
   const id = raw.contact_id || (raw.customData && raw.customData.id);
-
   if (!id || typeof id !== 'string') {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // You may want to pass the full object, or just the fields you need
+  // Merge id into the mapped object
   const mapped = mapGHLContactToPrisma({ ...raw, id });
 
   if (!mapped.id || typeof mapped.id !== 'string') {

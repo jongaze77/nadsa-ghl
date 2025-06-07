@@ -6,13 +6,15 @@ import { getApiKey, mapGHLContactToPrisma } from '@/lib/ghl-api';
 
 export const dynamic = 'force-dynamic';
 
+const MEMBERSHIP_TYPE_ID = "gH97LlNC9Y4PlkKVlY8V";
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { firstName, lastName, email, phone } = await req.json();
+  const { firstName, lastName, email, phone, membershipType } = await req.json();
 
   if (!firstName || !lastName || !email) {
     return NextResponse.json(
@@ -35,21 +37,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing GHL API key' }, { status: 500 });
   }
 
-  // GHL create contact endpoint
+  // Build customField for membershipType if set
+  let customFieldObj: Record<string, string> | undefined = undefined;
+  if (membershipType && membershipType !== '') {
+    customFieldObj = {
+      [MEMBERSHIP_TYPE_ID]: membershipType
+    };
+  }
+
   let ghlContact: any;
   try {
+    const body: any = {
+      firstName,
+      lastName,
+      email,
+      phone,
+    };
+    if (customFieldObj) {
+      body.customField = customFieldObj;
+    }
+
     const ghlRes = await fetch('https://rest.gohighlevel.com/v1/contacts/', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        email,
-        phone,
-      }),
+      body: JSON.stringify(body),
     });
     const ghlData = await ghlRes.json();
     if (!ghlRes.ok) {
@@ -58,7 +72,6 @@ export async function POST(req: NextRequest) {
         { status: ghlRes.status }
       );
     }
-    // GHL returns { contact: { ... } }
     ghlContact = ghlData.contact || ghlData;
   } catch (err: any) {
     return NextResponse.json(

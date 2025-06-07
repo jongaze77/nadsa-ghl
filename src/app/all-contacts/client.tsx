@@ -300,13 +300,26 @@ export default function ContactsClient() {
             onChange={setSelectedMembershipTypes}
           />
         </div>
-        <input
-          type="text"
-          className="px-4 py-2 border rounded-lg"
-          placeholder="Search by name, email, or phone"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <div className="relative flex items-center">
+  <input
+    type="text"
+    className="px-4 py-2 border rounded-lg pr-10"
+    placeholder="Search by name, email, or phone"
+    value={search}
+    onChange={e => setSearch(e.target.value)}
+  />
+  {search && (
+    <button
+      type="button"
+      aria-label="Clear search"
+      className="absolute right-2 text-gray-400 hover:text-gray-700 text-xl focus:outline-none"
+      onClick={() => setSearch('')}
+      tabIndex={0}
+    >
+      ×
+    </button>
+  )}
+</div>
       </div>
       <div style={scrollContainerStyle} className="w-full max-w-6xl border-t border-b border-gray-300 bg-white shadow">
         {/* Always show horizontal scrollbar */}

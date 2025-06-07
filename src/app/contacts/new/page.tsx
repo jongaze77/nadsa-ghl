@@ -5,6 +5,15 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// Membership types for dropdown
+const MEMBERSHIP_TYPES = [
+  'Full',
+  'Associate',
+  'None',
+  'Newsletter Only',
+  'Ex Member',
+];
+
 export default function NewContactPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -14,23 +23,22 @@ export default function NewContactPage() {
     lastName: '',
     email: '',
     phone: '',
+    membershipType: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
 
     // Simple required fields check
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
@@ -60,15 +68,15 @@ export default function NewContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         setError(data.error || 'Failed to create contact.');
         setSaving(false);
         return;
       }
-      setSuccess(true);
-      setForm({ firstName: '', lastName: '', email: '', phone: '' });
-      setTimeout(() => router.push('/all-contacts'), 1200);
+      // Instead of redirecting to /all-contacts, go to /contacts/[id]
+      // The API should return the contact with its GHL id
+      router.replace(`/contacts/${data.id}`);
     } catch (err: any) {
       setError(err.message || 'Failed to create contact.');
     } finally {
@@ -134,6 +142,23 @@ export default function NewContactPage() {
               disabled={saving}
             />
           </div>
+          <div>
+            <label className="block font-semibold mb-1" htmlFor="membershipType">Membership Type</label>
+            <select
+              name="membershipType"
+              id="membershipType"
+              className="w-full p-3 border-2 border-black rounded-lg"
+              value={form.membershipType}
+              onChange={handleChange}
+              disabled={saving}
+            >
+              <option value="">-- Select --</option>
+              {MEMBERSHIP_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            <small className="text-gray-500">Optional</small>
+          </div>
           <button
             type="submit"
             className={`w-full py-3 bg-blue-700 text-white rounded-lg font-bold text-lg ${saving ? 'opacity-60' : ''}`}
@@ -142,7 +167,6 @@ export default function NewContactPage() {
             {saving ? 'Saving…' : 'Add Member'}
           </button>
           {error && <div className="text-red-700 mt-2">{error}</div>}
-          {success && <div className="text-green-700 mt-2">Contact added! Redirecting…</div>}
         </form>
       </div>
     </main>

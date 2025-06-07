@@ -151,15 +151,23 @@ function extractMembershipType(ghlContact: any): string | null {
 }
 
 export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
-  const contact = ghlContact.contact || ghlContact;
+  // Support multiple possible sources for id
+  const id =
+    ghlContact.id ||
+    ghlContact.contact_id ||
+    (ghlContact.customData && ghlContact.customData.id) ||
+    (ghlContact.contact && ghlContact.contact.id);
+
+  // Use the whole object as the "contact"
+  const contact = { ...ghlContact, id };
 
   return {
     id: contact.id,
-    firstName: contact.firstName || null,
-    lastName: contact.lastName || null,
+    firstName: contact.firstName || contact.first_name || null,
+    lastName: contact.lastName || contact.last_name || null,
     email: contact.email || null,
     phone: contact.phone || null,
-    name: contact.name || null,
+    name: contact.name || contact.full_name || null,
     companyName: contact.companyName || null,
     address1: contact.address1 || null,
     address2: contact.address2 || null,
@@ -171,8 +179,11 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
     source: contact.source || null,
     tags: contact.tags || [],
     membershipType: extractMembershipType(ghlContact),
-    customFields: contact.customField || contact.customFields || null,
-    ghlUpdatedAt: contact.updatedAt ? new Date(contact.updatedAt) : null,
+    customFields:
+      contact.customField || contact.customFields || contact.customData || null,
+    ghlUpdatedAt: contact.updatedAt
+      ? new Date(contact.updatedAt)
+      : null,
     lastSyncedAt: new Date(),
   };
 }

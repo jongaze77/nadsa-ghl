@@ -239,7 +239,7 @@ export default function ContactDetailsClient({ contactId }: { contactId: string 
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold" style={{ letterSpacing: 2 }}>Contact Details</h1>
           <Link 
-            href="/contacts"
+            href="/all-contacts"
             className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
           >
             Back to Contacts
@@ -366,7 +366,7 @@ export default function ContactDetailsClient({ contactId }: { contactId: string 
                            : 'bg-blue-700 text-white hover:bg-blue-800'}`}
             disabled={loading || saving}
           >
-            {saving ? 'Saving…' : 'Update Contact'}
+            {saving ? 'Saving…' : 'Save Changes'}
           </button>
           {saveError && <div className="text-red-700 mt-2">{saveError}</div>}
           {saveOk     && <div className="text-green-700 mt-2">Saved!</div>}

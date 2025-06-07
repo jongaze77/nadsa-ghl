@@ -1,6 +1,4 @@
-// src/app/page.tsx
-
-'use client'
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -33,9 +31,7 @@ async function fetchAllContactsFromAPI(query = ''): Promise<any[]> {
   return allContacts;
 }
 
-export const dynamic = 'force-dynamic';
-
-export default function Home() {
+export default function QuickSearchPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -219,4 +215,4 @@ export default function Home() {
       )}
     </main>
   );
-}
+} 

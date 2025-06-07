@@ -72,7 +72,7 @@ function LoginPageContent() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
         <div>
           <h1 className="text-3xl font-bold text-center text-gray-900">
-            GHL Client Manager
+            nadsa Members Editor
           </h1>
           <h2 className="mt-2 text-center text-xl text-gray-600">
             Sign in to your account

@@ -13,11 +13,8 @@ export async function POST(req: NextRequest) {
   const raw = await req.json();
   console.log('GHL WEBHOOK RAW BODY:', raw);
 
-  // Expect the full contact object under the 'contact' key
-  const ghlContact = raw.contact;
-  if (!ghlContact) {
-    return NextResponse.json({ error: 'Missing contact object in webhook payload.' }, { status: 400 });
-  }
+  // Expect a flat object, fields like id, firstName, etc
+  const ghlContact = raw;
 
   const mapped = mapGHLContactToPrisma(ghlContact);
 
@@ -25,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Only assign customFields if it's present, otherwise use DbNull (or just delete if you prefer)
+  // Only assign customFields if it's present, otherwise use JsonNull (or just delete if you prefer)
   if (mapped.customFields === undefined || mapped.customFields === null) {
     delete mapped.customFields; // safest for type compatibility
   }

@@ -9,37 +9,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Get and log the full incoming payload for debugging
   const raw = await req.json();
   console.log('GHL WEBHOOK RAW BODY:', raw);
 
-  // Expect a flat object, fields like id, firstName, etc
-  const ghlContact = raw;
+  // Try to get the id from contact_id or customData.id
+  const id = raw.contact_id || (raw.customData && raw.customData.id);
 
-  const mapped = mapGHLContactToPrisma(ghlContact);
+  if (!id || typeof id !== 'string') {
+    return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
+  }
+
+  // You may want to pass the full object, or just the fields you need
+  const mapped = mapGHLContactToPrisma({ ...raw, id });
 
   if (!mapped.id || typeof mapped.id !== 'string') {
     return NextResponse.json({ error: 'Contact id is required for upsert.' }, { status: 400 });
   }
 
-  // Only assign customFields if it's present, otherwise use JsonNull (or just delete if you prefer)
   if (mapped.customFields === undefined || mapped.customFields === null) {
-    delete mapped.customFields; // safest for type compatibility
+    delete mapped.customFields;
   }
 
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();
   mapped.lastSyncedAt = new Date();
 
-  const { id, ...rest } = mapped;
+  const { id: mappedId, ...rest } = mapped;
   const data = {
-    id,
+    id: mappedId,
     ...rest,
     customFields: mapped.customFields ?? Prisma.JsonNull,
   } satisfies Prisma.ContactCreateInput;
 
   const contact = await prisma.contact.upsert({
-    where: { id },
+    where: { id: mappedId },
     update: data,
     create: data,
   });

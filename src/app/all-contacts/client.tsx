@@ -114,8 +114,24 @@ function getSortFn(column: string, direction: 'asc' | 'desc') {
 
 // EditContactModal component
 function EditContactModal({ contact, onClose }: { contact: any; onClose: () => void }) {
+  const [fullContact, setFullContact] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch latest data from API (which syncs with GHL) when modal opens
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    fetch(`/api/contacts/${contact.id}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch latest contact');
+        return res.json();
+      })
+      .then(data => setFullContact(data))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [contact.id]);
 
   const handleSave = async (payload: any) => {
     setSaving(true);
@@ -135,10 +151,17 @@ function EditContactModal({ contact, onClose }: { contact: any; onClose: () => v
     }
   };
 
+  if (loading) {
+    return <div className="p-6">Loading latest contact data…</div>;
+  }
+  if (error) {
+    return <div className="p-6 text-red-700">Error: {error}</div>;
+  }
+
   return (
     <div className="p-6">
       <FullContactEditForm
-        contact={contact}
+        contact={fullContact}
         saving={saving}
         error={error}
         onSave={handleSave}

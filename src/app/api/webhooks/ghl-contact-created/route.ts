@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fix for Prisma JSON input:
-  if (mapped.customFields === null) mapped.customFields = Prisma.JsonNull;
+  if (mapped.customFields === null) mapped.customFields = Prisma.DbNull;
 
   mapped.updatedAt = new Date();
   if (!mapped.createdAt) mapped.createdAt = new Date();

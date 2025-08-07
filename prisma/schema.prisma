@@ -21,6 +21,8 @@ model User {
   createdAt DateTime @default(now())
   failedLoginAttempts Int @default(0)
   lockedUntil DateTime?
+  
+  securityEvents SecurityEvent[]
 }
 
 model Contact {
@@ -48,4 +50,24 @@ model Contact {
   customFields  Json?    // Store all custom fields as JSON
   ghlUpdatedAt  DateTime?
   lastSyncedAt  DateTime @default(now())
+}
+
+model SecurityEvent {
+  id               String   @id @default(cuid())
+  eventType        String   // 'failed_login', 'successful_login_after_failures', 'new_ip_login', 'suspicious_pattern'
+  userId           Int?     // nullable for failed attempts on non-existent users
+  username         String   // for audit trail even if user doesn't exist
+  ipAddress        String
+  userAgent        String?
+  timestamp        DateTime @default(now())
+  context          Json?    // additional event-specific data
+  severity         String   // 'low', 'medium', 'high', 'critical'
+  notificationSent Boolean  @default(false)
+  
+  user User? @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([ipAddress])
+  @@index([eventType])
 }

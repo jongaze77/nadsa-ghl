@@ -1,0 +1,27 @@
+# NADSA GHL Client Manager Brownfield Enhancement Architecture
+
+## Table of Contents
+
+- [NADSA GHL Client Manager Brownfield Enhancement Architecture](#table-of-contents)
+  - [Introduction](./introduction.md)
+    - [Existing Project Analysis](./introduction.md#existing-project-analysis)
+    - [Change Log](./introduction.md#change-log)
+  - [Enhancement Scope and Integration Strategy](./enhancement-scope-and-integration-strategy.md)
+    - [Enhancement Overview](./enhancement-scope-and-integration-strategy.md#enhancement-overview)
+    - [Integration Approach](./enhancement-scope-and-integration-strategy.md#integration-approach)
+    - [Compatibility Requirements](./enhancement-scope-and-integration-strategy.md#compatibility-requirements)
+  - [Tech Stack Alignment](./tech-stack-alignment.md)
+    - [Target Technology Stack](./tech-stack-alignment.md#target-technology-stack)
+    - [New Technology Additions](./tech-stack-alignment.md#new-technology-additions)
+  - [Data Models and Schema Changes](./data-models-and-schema-changes.md)
+    - [New Data Models](./data-models-and-schema-changes.md#new-data-models)
+      - [](./data-models-and-schema-changes.md#)
+      - [](./data-models-and-schema-changes.md#)
+    - [Schema Integration Strategy](./data-models-and-schema-changes.md#schema-integration-strategy)
+    - [Duplicate Transaction Handling](./data-models-and-schema-changes.md#duplicate-transaction-handling)
+  - [Component Architecture](./component-architecture.md)
+    - [New Components](./component-architecture.md#new-components)
+      - [Backend Services (in )](./component-architecture.md#backend-services-in)
+      - [API Routes (in )](./component-architecture.md#api-routes-in)
+      - [Frontend Components (in )](./component-architecture.md#frontend-components-in)
+    - [Component Interaction Diagram](./component-architecture.md#component-interaction-diagram)

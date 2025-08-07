@@ -1,0 +1,27 @@
+# NADSA GHL Client Manager Brownfield Enhancement PRD
+
+## Table of Contents
+
+- [NADSA GHL Client Manager Brownfield Enhancement PRD](#table-of-contents)
+  - [Intro Project Analysis and Context](./intro-project-analysis-and-context.md)
+    - [Available Documentation Analysis](./intro-project-analysis-and-context.md#available-documentation-analysis)
+    - [Enhancement Scope Definition](./intro-project-analysis-and-context.md#enhancement-scope-definition)
+    - [Goals and Background Context](./intro-project-analysis-and-context.md#goals-and-background-context)
+  - [Requirements](./requirements.md)
+    - [Functional Requirements](./requirements.md#functional-requirements)
+    - [Non-Functional Requirements](./requirements.md#non-functional-requirements)
+    - [Compatibility Requirements](./requirements.md#compatibility-requirements)
+  - [User Interface Enhancement Goals](./user-interface-enhancement-goals.md)
+    - [Integration with Existing UI](./user-interface-enhancement-goals.md#integration-with-existing-ui)
+    - [Modified/New Screens and Views](./user-interface-enhancement-goals.md#modifiednew-screens-and-views)
+    - [UI Consistency Requirements](./user-interface-enhancement-goals.md#ui-consistency-requirements)
+  - [Technical Constraints and Integration Requirements](./technical-constraints-and-integration-requirements.md)
+    - [Existing Technology Stack](./technical-constraints-and-integration-requirements.md#existing-technology-stack)
+    - [Integration Approach](./technical-constraints-and-integration-requirements.md#integration-approach)
+    - [Code Organization and Standards](./technical-constraints-and-integration-requirements.md#code-organization-and-standards)
+    - [Deployment and Operations](./technical-constraints-and-integration-requirements.md#deployment-and-operations)
+    - [Risk Assessment and Mitigation](./technical-constraints-and-integration-requirements.md#risk-assessment-and-mitigation)
+  - [Epic and Story Structure](./epic-and-story-structure.md)
+    - [Epic Approach](./epic-and-story-structure.md#epic-approach)
+    - [Epic 1: Membership Reconciliation and Security Overhaul](./epic-and-story-structure.md#epic-1-membership-reconciliation-and-security-overhaul)
+      - [Proposed Story Sequence](./epic-and-story-structure.md#proposed-story-sequence)

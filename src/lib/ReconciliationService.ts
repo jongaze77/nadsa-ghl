@@ -287,11 +287,26 @@ export class ReconciliationService {
     };
 
     console.log(`[ReconciliationService] Updating GHL contact with membership data:`, membershipUpdateData);
+    console.log(`[ReconciliationService] Current renewal date in GHL: ${currentContact.renewalDate?.toISOString().split('T')[0] || 'null'}`);
+    console.log(`[ReconciliationService] New renewal date to set: ${smartRenewalDate.toISOString().split('T')[0]}`);
     
     const membershipUpdateResult = await this.retryOperation(
       () => updateMembershipStatus(contactId, membershipUpdateData),
       'GHL membership update'
     );
+    
+    console.log(`[ReconciliationService] GHL membership update result:`, membershipUpdateResult);
+    
+    // Step 4.5: Verify renewal date was stored in database (local contact)
+    try {
+      const updatedContact = await prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { customFields: true }
+      });
+      console.log(`[ReconciliationService] Database contact customFields after update:`, JSON.stringify(updatedContact?.customFields, null, 2));
+    } catch (dbError) {
+      console.error(`[ReconciliationService] Could not verify database contact update:`, dbError);
+    }
     
     // Step 5: Add reconciliation note to GHL contact
     const noteResult = await this.addReconciliationNote(contactId, paymentData, membershipValidation, smartRenewalDate);

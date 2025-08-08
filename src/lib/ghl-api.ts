@@ -162,10 +162,54 @@ export async function updateMembershipStatus(
 
   try {
     const result = await updateContactInGHL(contactId, updatePayload);
-    console.log(`[GHL-API] Membership status update successful for contact ${contactId}`);
+    console.log(`[GHL-API] Membership status update successful for contact ${contactId}`, result);
+    
+    // Double-check: fetch the contact back to verify the update worked
+    console.log(`[GHL-API] Verifying renewal date was set correctly...`);
+    try {
+      const verifyContact = await fetchContactFromGHL(contactId);
+      console.log(`[GHL-API] Full GHL contact response structure:`, JSON.stringify(verifyContact, null, 2));
+      
+      let actualRenewalDate = null;
+      const renewalFieldId = 'cWMPNiNAfReHOumOhBB2';
+      
+      // Check different possible structures for custom fields
+      if (verifyContact.customFields) {
+        console.log(`[GHL-API] CustomFields structure:`, JSON.stringify(verifyContact.customFields, null, 2));
+        
+        if (Array.isArray(verifyContact.customFields)) {
+          // Array format
+          const renewalField = verifyContact.customFields.find((f: any) => f.id === renewalFieldId);
+          if (renewalField) {
+            actualRenewalDate = typeof renewalField === 'object' ? renewalField.value : renewalField;
+          }
+        } else if (typeof verifyContact.customFields === 'object') {
+          // Object format
+          const renewalField = verifyContact.customFields[renewalFieldId];
+          if (renewalField) {
+            actualRenewalDate = typeof renewalField === 'object' ? renewalField.value : renewalField;
+          }
+        }
+      }
+      
+      console.log(`[GHL-API] Verification - Renewal date in GHL after update: ${actualRenewalDate || 'null'}`);
+      console.log(`[GHL-API] Expected renewal date: ${updatePayload.customFields['cWMPNiNAfReHOumOhBB2']}`);
+      console.log(`[GHL-API] Update payload sent was:`, JSON.stringify(updatePayload, null, 2));
+      
+      if (actualRenewalDate !== updatePayload.customFields['cWMPNiNAfReHOumOhBB2']) {
+        console.error(`[GHL-API] ❌ WARNING: Renewal date verification failed! Expected ${updatePayload.customFields['cWMPNiNAfReHOumOhBB2']}, got ${actualRenewalDate}`);
+        console.error(`[GHL-API] This indicates the GHL API update did not work as expected`);
+      } else {
+        console.log(`[GHL-API] ✅ Renewal date verified successfully in GHL`);
+      }
+    } catch (verifyError) {
+      console.error(`[GHL-API] Could not verify renewal date update:`, verifyError);
+    }
+    
     return result;
   } catch (error) {
     console.error(`[GHL-API] Membership status update failed for contact ${contactId}:`, error);
+    console.error(`[GHL-API] Failed payload was:`, updatePayload);
     throw error;
   }
 }

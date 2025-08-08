@@ -490,7 +490,9 @@ export class ReconciliationService {
       
       // Extract membership type
       const membershipTypeFieldId = 'gH97LlNC9Y4PlkKVlY8V';
+      const singleDoubleFieldId = 'hJQPtsVDFBxI1USEN83v'; // single_or_double_membership field
       let membershipType: string | null = null;
+      let singleDoubleType: string | null = null;
       
       if (ghlContact.customFields) {
         const membershipField = Array.isArray(ghlContact.customFields)
@@ -500,10 +502,25 @@ export class ReconciliationService {
         if (membershipField) {
           membershipType = typeof membershipField === 'object' ? membershipField.value : membershipField;
         }
+        
+        // Also check the single/double field
+        const singleDoubleField = Array.isArray(ghlContact.customFields)
+          ? ghlContact.customFields.find((f: any) => f.id === singleDoubleFieldId)
+          : ghlContact.customFields[singleDoubleFieldId];
+          
+        if (singleDoubleField) {
+          singleDoubleType = typeof singleDoubleField === 'object' ? singleDoubleField.value : singleDoubleField;
+        }
+      }
+      
+      // Combine membership types - prefer single/double if available
+      let finalMembershipType = membershipType;
+      if (singleDoubleType && ['Single', 'Double'].includes(singleDoubleType)) {
+        finalMembershipType = singleDoubleType;
       }
       
       return {
-        membershipType: membershipType?.trim() || null,
+        membershipType: finalMembershipType?.trim() || null,
         renewalDate: currentRenewalDate,
         firstName: ghlContact.firstName || null,
         lastName: ghlContact.lastName || null,
@@ -540,7 +557,8 @@ export class ReconciliationService {
       'Associate': { min: 40, max: 60, typical: 50 },
       'Single': { min: 60, max: 80, typical: 70 }, // Same as Full
       'Double': { min: 60, max: 80, typical: 70 }, // Same as Full
-      'Newsletter Only': { min: 10, max: 20, typical: 15 }
+      'Newsletter Only': { min: 10, max: 20, typical: 15 },
+      'None': { min: 10, max: 80, typical: 30 } // Wide range for upgrading members
     };
     
     const membershipType = contact.membershipType;
@@ -552,7 +570,7 @@ export class ReconciliationService {
         membershipType: null,
         expectedAmount: 'Unknown - no membership type recorded',
         actualAmount: paymentAmount,
-        warning: `Contact ${contact.firstName} ${contact.lastName} has no membership type recorded in GHL`
+        warning: `Contact ${((contact.firstName || '') + ' ' + (contact.lastName || '')).trim() || '[Unknown Name]'} has no membership type recorded in GHL`
       };
     }
     
@@ -564,7 +582,8 @@ export class ReconciliationService {
       'associate': 'Associate',
       'full': 'Full',
       'newsletter': 'Newsletter Only',
-      'newsletter only': 'Newsletter Only'
+      'newsletter only': 'Newsletter Only',
+      'none': 'None'
     };
     
     const lowerType = membershipType.toLowerCase().trim();
@@ -649,6 +668,7 @@ export class ReconciliationService {
       noteText += `🏷️ Membership Type: ${validation.membershipType || 'Unknown'}\n`;
       noteText += `💰 Expected Amount: ${validation.expectedAmount}\n`;
       noteText += `📅 Renewal Date: ${renewalDateStr}\n`;
+      noteText += `🔧 Renewal Date (ISO): ${renewalDate.toISOString().split('T')[0]}\n`;
       
       if (validation.warning) {
         noteText += `⚠️ Warning: ${validation.warning}\n`;
@@ -660,7 +680,8 @@ export class ReconciliationService {
         noteText += `✅ Validation: Payment amount confirmed\n`;
       }
       
-      noteText += `🔧 Source: Automated reconciliation system`;
+      noteText += `🔧 Source: Automated reconciliation system\n`;
+      noteText += `📊 GHL Field Updates: renewal_date=${renewalDate.toISOString().split('T')[0]}, tags=Paid,Active Member`;
       
       // Add note via GHL API
       const { fetchWithRetry } = await import('./ghl-api');

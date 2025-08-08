@@ -7,10 +7,11 @@ import MatchSuggestions from './MatchSuggestions';
 import { UploadResponse, PersistedPaymentData, ContactMatch } from './types';
 
 export default function ReconciliationDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'payments' | 'matches'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'payments'>('upload');
   const [uploadSuccess, setUploadSuccess] = useState<UploadResponse | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PersistedPaymentData | null>(null);
+  const [showMatchesModal, setShowMatchesModal] = useState<boolean>(false);
   const [matchConfirmationMessage, setMatchConfirmationMessage] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
@@ -33,7 +34,7 @@ export default function ReconciliationDashboard() {
 
   const handleFindMatches = (payment: PersistedPaymentData) => {
     setSelectedPayment(payment);
-    setActiveTab('matches'); // Navigate to match suggestions when explicitly requested
+    setShowMatchesModal(true); // Open modal instead of navigating
   };
 
   const handleMatchConfirmed = (payment: PersistedPaymentData, match: ContactMatch) => {
@@ -47,6 +48,7 @@ export default function ReconciliationDashboard() {
       }`
     );
     setSelectedPayment(null); // Clear selection after confirmation
+    setShowMatchesModal(false); // Close modal after confirmation
     setRefreshTrigger(prev => prev + 1); // Trigger payment list refresh
     
     // Clear success message after 5 seconds
@@ -57,8 +59,7 @@ export default function ReconciliationDashboard() {
 
   const tabs = [
     { id: 'upload', label: 'File Upload', icon: '📁' },
-    { id: 'payments', label: 'Payment Processing', icon: '💳' },
-    { id: 'matches', label: 'Match Suggestions', icon: '🔗' }
+    { id: 'payments', label: 'Payment Processing', icon: '💳' }
   ];
 
   return (
@@ -147,36 +148,25 @@ export default function ReconciliationDashboard() {
         </div>
       )}
 
-      {activeTab === 'matches' && (
-        <div className="space-y-6">
-          {/* Match confirmation success message */}
-          {matchConfirmationMessage && (
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-start space-x-3">
-                <span className="text-green-400 text-lg">✅</span>
-                <div className="flex-1">
-                  <h4 className="font-medium text-green-800 dark:text-green-300">
-                    Match Confirmed!
-                  </h4>
-                  <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-                    {matchConfirmationMessage}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setMatchConfirmationMessage(null)}
-                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
-                >
-                  ✕
-                </button>
-              </div>
+      {/* Match confirmation success message (moved here so it shows on payments tab) */}
+      {matchConfirmationMessage && (
+        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="flex items-start space-x-3">
+            <span className="text-green-400 text-lg">✅</span>
+            <div className="flex-1">
+              <h4 className="font-medium text-green-800 dark:text-green-300">
+                Match Confirmed!
+              </h4>
+              <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+                {matchConfirmationMessage}
+              </p>
             </div>
-          )}
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <MatchSuggestions 
-              selectedPayment={selectedPayment}
-              onMatchConfirmed={handleMatchConfirmed}
-            />
+            <button
+              onClick={() => setMatchConfirmationMessage(null)}
+              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
@@ -200,6 +190,38 @@ export default function ReconciliationDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Match Suggestions Modal */}
+      {showMatchesModal && selectedPayment && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowMatchesModal(false);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Find Matches for Payment
+              </h3>
+              <button
+                onClick={() => setShowMatchesModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <MatchSuggestions 
+                selectedPayment={selectedPayment}
+                onMatchConfirmed={handleMatchConfirmed}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

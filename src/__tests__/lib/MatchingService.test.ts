@@ -135,7 +135,7 @@ describe('MatchingService', () => {
       expect(result.suggestions.length).toBeGreaterThan(0);
       const johnMatch = result.suggestions.find(s => s.contact.id === 'contact-1');
       expect(johnMatch).toBeDefined();
-      expect(johnMatch!.confidence).toBeGreaterThan(0.8);
+      expect(johnMatch!.confidence).toBeGreaterThan(0.5); // Adjusted for 40% name + 0% email + 20% amount = 0.6
       expect(johnMatch!.reasoning.nameMatch?.extractedName).toBe('JOHN SMITH');
       expect(johnMatch!.reasoning.amountMatch?.expectedRange).toBe('£60-80');
     });
@@ -159,11 +159,12 @@ describe('MatchingService', () => {
         ...mockPaymentData,
         description: 'BANK TRANSFER',
         amount: 50, // Associate membership range
+        customer_email: 'jane@example.com', // Add email to boost confidence above threshold
       };
 
       const result = await service.findMatches(amountOnlyPayment);
 
-      // Should still find matches based on amount
+      // Should still find matches based on amount + email
       expect(result.suggestions.length).toBeGreaterThan(0);
       const janeMatch = result.suggestions.find(s => s.contact.id === 'contact-2');
       expect(janeMatch).toBeDefined();
@@ -445,7 +446,7 @@ describe('MatchingService', () => {
       (prisma.reconciliationLog.findMany as jest.Mock).mockResolvedValue([]);
     });
 
-    it('should weight name matches at 60% and amount matches at 40%', async () => {
+    it('should weight name matches at 40%, email matches at 40%, and amount matches at 20%', async () => {
       // Perfect name match, poor amount match
       const perfectNamePayment = {
         ...mockPaymentData,
@@ -476,6 +477,157 @@ describe('MatchingService', () => {
       result.suggestions.forEach(suggestion => {
         expect(suggestion.confidence).toBeGreaterThanOrEqual(0.3);
       });
+    });
+  });
+
+  describe('Customer Field Matching (Enhanced)', () => {
+    beforeEach(() => {
+      (ghlApi.fetchAllContactsFromGHL as jest.Mock).mockResolvedValue({
+        contacts: mockContacts,
+      });
+      (ghlApi.mapGHLContactToPrisma as jest.Mock).mockImplementation((contact: any) => contact);
+      (prisma.reconciliationLog.findMany as jest.Mock).mockResolvedValue([]);
+    });
+
+    it('should prioritize customer_name over description for matching', async () => {
+      const paymentWithCustomerData: ParsedPaymentData = {
+        transactionFingerprint: 'test-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_123',
+        description: 'Random description with no name',
+        customer_name: 'John Smith',
+        customer_email: 'john@example.com',
+      };
+
+      const result = await service.findMatches(paymentWithCustomerData);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const bestMatch = result.suggestions[0];
+      expect(bestMatch.reasoning.nameMatch?.extractedName).toBe('John Smith');
+      expect(bestMatch.confidence).toBeGreaterThan(0.8); // High confidence due to exact name + email match
+    });
+
+    it('should match customer_email exactly', async () => {
+      const paymentWithEmail: ParsedPaymentData = {
+        transactionFingerprint: 'test-email-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_456',
+        customer_name: 'John Smith',
+        customer_email: 'john@example.com',
+      };
+
+      const result = await service.findMatches(paymentWithEmail);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const bestMatch = result.suggestions[0];
+      expect(bestMatch.reasoning.emailMatch?.score).toBe(1.0);
+      expect(bestMatch.reasoning.emailMatch?.providedEmail).toBe('john@example.com');
+      expect(bestMatch.reasoning.emailMatch?.contactEmail).toBe('john@example.com');
+    });
+
+    it('should handle partial email domain matches', async () => {
+      const paymentWithSimilarEmail: ParsedPaymentData = {
+        transactionFingerprint: 'test-domain-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_789',
+        customer_email: 'j.smith@example.com', // Same domain, different username
+        customer_name: 'J Smith', // Add name to boost confidence above threshold
+      };
+
+      const result = await service.findMatches(paymentWithSimilarEmail);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const match = result.suggestions[0];
+      expect(match.reasoning.emailMatch?.score).toBeGreaterThan(0);
+      expect(match.reasoning.emailMatch?.score).toBeLessThan(1.0);
+    });
+
+    it('should use updated confidence weighting (40% name, 40% email, 20% amount)', async () => {
+      const paymentPerfectMatch: ParsedPaymentData = {
+        transactionFingerprint: 'test-perfect-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70, // Perfect amount match for 'Full' membership
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_perfect',
+        customer_name: 'John Smith', // Perfect name match
+        customer_email: 'john@example.com', // Perfect email match
+      };
+
+      const result = await service.findMatches(paymentPerfectMatch);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const perfectMatch = result.suggestions[0];
+      
+      // With perfect matches across all fields, confidence should be very high
+      expect(perfectMatch.confidence).toBeGreaterThan(0.9);
+      expect(perfectMatch.reasoning.nameMatch?.score).toBe(1.0);
+      expect(perfectMatch.reasoning.emailMatch?.score).toBe(1.0);
+      expect(perfectMatch.reasoning.amountMatch?.score).toBeGreaterThan(0.8);
+    });
+
+    it('should gracefully handle missing customer fields', async () => {
+      const paymentNoCustomerData: ParsedPaymentData = {
+        transactionFingerprint: 'test-no-customer-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_no_customer',
+        description: 'MEMBERSHIP PAYMENT - JOHN SMITH', // Fall back to description parsing
+      };
+
+      const result = await service.findMatches(paymentNoCustomerData);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const match = result.suggestions[0];
+      expect(match.reasoning.nameMatch?.score).toBeGreaterThan(0);
+      expect(match.reasoning.emailMatch?.score || 0).toBe(0); // No email provided
+    });
+
+    it('should prefer customer_name over description even with lower string similarity', async () => {
+      const paymentMixedSources: ParsedPaymentData = {
+        transactionFingerprint: 'test-mixed-123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 70,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'stripe_mixed',
+        description: 'MEMBERSHIP PAYMENT - JOHN SMITH EXACTLY', // Perfect description match
+        customer_name: 'J Smith', // Shorter but from customer field
+      };
+
+      const result = await service.findMatches(paymentMixedSources);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const match = result.suggestions[0];
+      // Should use customer_name even if description might have better string match
+      expect(match.reasoning.nameMatch?.extractedName).toBe('J Smith');
+    });
+
+    it('should work with real-world Stripe customer data format', async () => {
+      const realWorldStripePayment: ParsedPaymentData = {
+        transactionFingerprint: 'ch_1234567890abcdef',
+        paymentDate: new Date('2024-01-01T10:30:00Z'),
+        amount: 42.00, // Fixed currency preservation
+        source: 'STRIPE_REPORT',
+        transactionRef: 'ch_1234567890abcdef',
+        customer_name: 'John Smith',
+        customer_email: 'john@example.com',
+        card_address_line1: '123 Main St',
+        card_address_postal_code: 'SW1A 1AA',
+      };
+
+      const result = await service.findMatches(realWorldStripePayment);
+
+      expect(result.suggestions.length).toBeGreaterThan(0);
+      const match = result.suggestions[0];
+      expect(match.reasoning.nameMatch?.score).toBeGreaterThan(0);
+      expect(match.reasoning.emailMatch?.score).toBeGreaterThan(0);
+      expect(match.contact.id).toBe('contact-1');
     });
   });
 });

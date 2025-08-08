@@ -5,12 +5,18 @@ import type { ParsedPaymentData } from './CsvParsingService';
 
 export interface MatchSuggestion {
   contact: Contact;
+  contactId: string; // Add contactId field for frontend compatibility
   confidence: number;
   reasoning: {
     nameMatch?: {
       score: number;
       extractedName: string;
       matchedAgainst: string;
+    };
+    emailMatch?: {
+      score: number;
+      providedEmail: string;
+      contactEmail: string;
     };
     amountMatch?: {
       score: number;
@@ -38,8 +44,9 @@ export class MatchingService {
   private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   private readonly MIN_CONFIDENCE_THRESHOLD = 0.3;
   private readonly MAX_SUGGESTIONS = 5;
-  private readonly NAME_WEIGHT = 0.6;
-  private readonly AMOUNT_WEIGHT = 0.4;
+  private readonly NAME_WEIGHT = 0.4;
+  private readonly EMAIL_WEIGHT = 0.4;
+  private readonly AMOUNT_WEIGHT = 0.2;
 
   private readonly membershipFees: Record<string, MembershipFeeRange> = {
     'Full': { min: 60, max: 80 },
@@ -156,18 +163,23 @@ export class MatchingService {
     const suggestions: MatchSuggestion[] = [];
 
     for (const contact of contacts) {
-      const nameMatch = this.calculateNameMatch(paymentData.description || '', contact);
+      const nameMatch = this.calculateNameMatch(paymentData, contact);
       const amountMatch = this.calculateAmountMatch(paymentData.amount, contact.membershipType);
+      const emailMatch = this.calculateEmailMatch(paymentData, contact);
 
-      // Calculate combined confidence score
-      const confidence = (nameMatch.score * this.NAME_WEIGHT) + (amountMatch.score * this.AMOUNT_WEIGHT);
+      // Calculate combined confidence score with email matching
+      const confidence = (nameMatch.score * this.NAME_WEIGHT) + 
+                        (emailMatch.score * this.EMAIL_WEIGHT) + 
+                        (amountMatch.score * this.AMOUNT_WEIGHT);
 
       if (confidence > 0) {
         suggestions.push({
           contact,
+          contactId: contact.id, // Add contactId for frontend compatibility
           confidence,
           reasoning: {
             nameMatch,
+            emailMatch: emailMatch.score > 0 ? emailMatch : undefined,
             amountMatch
           }
         });
@@ -177,7 +189,57 @@ export class MatchingService {
     return suggestions;
   }
 
-  private calculateNameMatch(description: string, contact: Contact) {
+  private calculateNameMatch(paymentData: ParsedPaymentData, contact: Contact) {
+    let bestScore = 0;
+    let bestExtracted = '';
+    let bestMatched = '';
+    
+    // First, try to match using customer_name from Stripe data (highest priority)
+    if (paymentData.customer_name) {
+      const customerNameScore = this.matchSingleName(paymentData.customer_name, contact);
+      if (customerNameScore.score > bestScore) {
+        bestScore = customerNameScore.score;
+        bestExtracted = paymentData.customer_name;
+        bestMatched = customerNameScore.matchedAgainst;
+      }
+    }
+    
+    // Fall back to extracting names from description if no customer_name or low score
+    if (bestScore < 0.8 && paymentData.description) {
+      const descriptionMatch = this.matchFromDescription(paymentData.description, contact);
+      if (descriptionMatch.score > bestScore) {
+        bestScore = descriptionMatch.score;
+        bestExtracted = descriptionMatch.extractedName;
+        bestMatched = descriptionMatch.matchedAgainst;
+      }
+    }
+    
+    return {
+      score: bestScore,
+      extractedName: bestExtracted,
+      matchedAgainst: bestMatched
+    };
+  }
+  
+  private matchSingleName(providedName: string, contact: Contact) {
+    const contactNames = this.getContactNames(contact);
+    let bestScore = 0;
+    let bestMatched = '';
+    
+    const cleanProvidedName = providedName.toUpperCase().trim();
+    
+    for (const contactName of contactNames) {
+      const score = this.calculateLevenshteinSimilarity(cleanProvidedName, contactName);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatched = contactName;
+      }
+    }
+    
+    return { score: bestScore, matchedAgainst: bestMatched };
+  }
+  
+  private matchFromDescription(description: string, contact: Contact) {
     if (!description) {
       return { score: 0, extractedName: '', matchedAgainst: '' };
     }
@@ -283,6 +345,45 @@ export class MatchingService {
     }
 
     return [...new Set(names)].filter(name => name.trim().length > 0);
+  }
+  
+  private calculateEmailMatch(paymentData: ParsedPaymentData, contact: Contact) {
+    // If no customer email provided, return 0 score
+    if (!paymentData.customer_email) {
+      return { score: 0, providedEmail: '', contactEmail: '' };
+    }
+    
+    // If contact has no email, return 0 score
+    if (!contact.email) {
+      return { score: 0, providedEmail: paymentData.customer_email, contactEmail: '' };
+    }
+    
+    const providedEmail = paymentData.customer_email.toLowerCase().trim();
+    const contactEmail = contact.email.toLowerCase().trim();
+    
+    // Exact match gets full score
+    if (providedEmail === contactEmail) {
+      return { score: 1.0, providedEmail: paymentData.customer_email, contactEmail: contact.email };
+    }
+    
+    // Check domain match (less reliable but still useful)
+    const providedDomain = providedEmail.split('@')[1];
+    const contactDomain = contactEmail.split('@')[1];
+    
+    if (providedDomain && contactDomain && providedDomain === contactDomain) {
+      // Same domain gets partial score
+      const usernameScore = this.calculateLevenshteinSimilarity(
+        providedEmail.split('@')[0],
+        contactEmail.split('@')[0]
+      );
+      return { 
+        score: Math.min(0.7, usernameScore * 0.7), 
+        providedEmail: paymentData.customer_email, 
+        contactEmail: contact.email 
+      };
+    }
+    
+    return { score: 0, providedEmail: paymentData.customer_email, contactEmail: contact.email };
   }
 
   private calculateLevenshteinSimilarity(str1: string, str2: string): number {

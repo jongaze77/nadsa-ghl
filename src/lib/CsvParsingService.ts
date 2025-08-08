@@ -9,6 +9,11 @@ export interface ParsedPaymentData {
   transactionRef: string;
   description?: string;
   hashedAccountIdentifier?: string;
+  // New customer fields from Stripe CSV
+  customer_name?: string;
+  customer_email?: string;
+  card_address_line1?: string;
+  card_address_postal_code?: string;
 }
 
 export interface CsvParsingResult {
@@ -43,6 +48,10 @@ interface StripeFieldMapping {
   amount: string[];
   created: string[];
   description: string[];
+  customer_name: string[];
+  customer_email: string[];
+  card_address_line1: string[];
+  card_address_postal_code: string[];
 }
 
 export class CsvParsingService {
@@ -55,9 +64,13 @@ export class CsvParsingService {
     // Define possible field names for Stripe CSV mapping
     this.stripeFieldMapping = {
       id: ['id', 'source_id', 'transaction_id', 'charge_id'],
-      amount: ['Amount', 'amount', 'gross', 'Gross', 'total', 'Total'],
+      amount: ['Amount', 'amount', 'gross', 'Gross', 'Customer_facing_amount', 'customer_facing_amount', 'total', 'Total'],
       created: ['Created (UTC)', 'created_utc', 'created', 'date', 'Date', 'timestamp'],
-      description: ['Description', 'description', 'memo', 'note', 'details']
+      description: ['Description', 'description', 'memo', 'note', 'details'],
+      customer_name: ['customer_name', 'Customer_name', 'name', 'Name', 'customer name', 'Customer Name'],
+      customer_email: ['customer_email', 'Customer_email', 'email', 'Email', 'customer email', 'Customer Email'],
+      card_address_line1: ['card_address_line1', 'Card_address_line1', 'address_line1', 'Address_line1', 'billing_address_line1', 'Billing_address_line1'],
+      card_address_postal_code: ['card_address_postal_code', 'Card_address_postal_code', 'postal_code', 'Postal_code', 'zip_code', 'Zip_code']
     };
   }
 
@@ -209,7 +222,16 @@ export class CsvParsingService {
       let processed = 0;
       let skipped = 0;
       
-      const { idIndex, amountIndex, createdIndex, descriptionIndex } = headerMapping.mapping!;
+      const { 
+        idIndex, 
+        amountIndex, 
+        createdIndex, 
+        descriptionIndex,
+        customerNameIndex,
+        customerEmailIndex,
+        cardAddressLine1Index,
+        cardAddressPostalCodeIndex
+      } = headerMapping.mapping!;
 
       for (let i = 1; i < lines.length; i++) {
         try {
@@ -225,8 +247,16 @@ export class CsvParsingService {
           const amountStr = values[amountIndex];
           const createdStr = values[createdIndex];
           const description = descriptionIndex !== -1 ? values[descriptionIndex] : '';
+          
+          // Extract customer fields
+          const customer_name = customerNameIndex !== -1 ? values[customerNameIndex] : undefined;
+          const customer_email = customerEmailIndex !== -1 ? values[customerEmailIndex] : undefined;
+          const card_address_line1 = cardAddressLine1Index !== -1 ? values[cardAddressLine1Index] : undefined;
+          const card_address_postal_code = cardAddressPostalCodeIndex !== -1 ? values[cardAddressPostalCodeIndex] : undefined;
 
-          const amount = Math.abs(parseFloat(amountStr) / 100); // Stripe amounts are in cents
+          // FIX: Preserve pound values correctly - do NOT divide by 100
+          // Stripe CSV contains pound values (e.g., £42) that should stay as 42.00, not become 0.42
+          const amount = Math.abs(parseFloat(amountStr));
           if (amount <= 0) {
             skipped++;
             continue;
@@ -251,7 +281,11 @@ export class CsvParsingService {
             amount,
             source: 'STRIPE_REPORT',
             transactionRef: id,
-            description: description || `Stripe transaction ${id}`
+            description: description || `Stripe transaction ${id}`,
+            customer_name: customer_name?.trim() || undefined,
+            customer_email: customer_email?.trim() || undefined,
+            card_address_line1: card_address_line1?.trim() || undefined,
+            card_address_postal_code: card_address_postal_code?.trim() || undefined
           };
 
           data.push(parsedData);
@@ -282,12 +316,16 @@ export class CsvParsingService {
     }
   }
 
-  private mapStripeHeaders(headers: string[]): { success: boolean; errors?: string[]; mapping?: { idIndex: number; amountIndex: number; createdIndex: number; descriptionIndex: number } } {
+  private mapStripeHeaders(headers: string[]): { success: boolean; errors?: string[]; mapping?: { idIndex: number; amountIndex: number; createdIndex: number; descriptionIndex: number; customerNameIndex: number; customerEmailIndex: number; cardAddressLine1Index: number; cardAddressPostalCodeIndex: number } } {
     const mapping = {
       idIndex: -1,
       amountIndex: -1,
       createdIndex: -1,
-      descriptionIndex: -1
+      descriptionIndex: -1,
+      customerNameIndex: -1,
+      customerEmailIndex: -1,
+      cardAddressLine1Index: -1,
+      cardAddressPostalCodeIndex: -1
     };
     
     const errors: string[] = [];
@@ -319,6 +357,30 @@ export class CsvParsingService {
         header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
         mapping.descriptionIndex = i;
       }
+      
+      // Check customer_name field (optional)
+      if (mapping.customerNameIndex === -1 && this.stripeFieldMapping.customer_name.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.customerNameIndex = i;
+      }
+      
+      // Check customer_email field (optional)
+      if (mapping.customerEmailIndex === -1 && this.stripeFieldMapping.customer_email.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.customerEmailIndex = i;
+      }
+      
+      // Check card_address_line1 field (optional)
+      if (mapping.cardAddressLine1Index === -1 && this.stripeFieldMapping.card_address_line1.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.cardAddressLine1Index = i;
+      }
+      
+      // Check card_address_postal_code field (optional)
+      if (mapping.cardAddressPostalCodeIndex === -1 && this.stripeFieldMapping.card_address_postal_code.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.cardAddressPostalCodeIndex = i;
+      }
     }
     
     // Validate required fields were found
@@ -340,7 +402,14 @@ export class CsvParsingService {
       return { success: false, errors };
     }
     
-    this.logger.log(`Stripe header mapping successful: ID=${headers[mapping.idIndex]}, Amount=${headers[mapping.amountIndex]}, Created=${headers[mapping.createdIndex]}${mapping.descriptionIndex !== -1 ? `, Description=${headers[mapping.descriptionIndex]}` : ''}`);
+    const customerFieldsInfo = [
+      mapping.customerNameIndex !== -1 ? `CustomerName=${headers[mapping.customerNameIndex]}` : '',
+      mapping.customerEmailIndex !== -1 ? `CustomerEmail=${headers[mapping.customerEmailIndex]}` : '',
+      mapping.cardAddressLine1Index !== -1 ? `AddressLine1=${headers[mapping.cardAddressLine1Index]}` : '',
+      mapping.cardAddressPostalCodeIndex !== -1 ? `PostalCode=${headers[mapping.cardAddressPostalCodeIndex]}` : ''
+    ].filter(Boolean).join(', ');
+    
+    this.logger.log(`Stripe header mapping successful: ID=${headers[mapping.idIndex]}, Amount=${headers[mapping.amountIndex]}, Created=${headers[mapping.createdIndex]}${mapping.descriptionIndex !== -1 ? `, Description=${headers[mapping.descriptionIndex]}` : ''}${customerFieldsInfo ? `, ${customerFieldsInfo}` : ''}`);
     
     return { success: true, mapping };
   }
@@ -439,6 +508,11 @@ export class CsvParsingService {
       if (!item.amount || item.amount <= 0) {
         errors.push('Invalid payment amount');
       }
+      
+      // Validate reasonable amount range for membership (£5-£500)
+      if (item.amount < 5 || item.amount > 500) {
+        errors.push(`Payment amount £${item.amount} is outside expected range (£5-£500)`);
+      }
 
       if (!['BANK_CSV', 'STRIPE_REPORT'].includes(item.source)) {
         errors.push('Invalid payment source');
@@ -446,6 +520,19 @@ export class CsvParsingService {
 
       if (!item.transactionRef) {
         errors.push('Missing transaction reference');
+      }
+      
+      // Validate customer email format if provided
+      if (item.customer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.customer_email)) {
+        errors.push('Invalid customer email format');
+      }
+      
+      // Validate postal code format if provided (UK format)
+      if (item.card_address_postal_code && !/^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i.test(item.card_address_postal_code)) {
+        // Allow various formats but warn if not standard UK
+        if (item.card_address_postal_code.length < 3 || item.card_address_postal_code.length > 10) {
+          errors.push('Postal code format may be invalid');
+        }
       }
 
       if (errors.length === 0) {

@@ -2,12 +2,16 @@
 
 import { useState } from 'react';
 import FileUpload from './FileUpload';
-import { UploadResponse } from './types';
+import PaymentList from './PaymentList';
+import MatchSuggestions from './MatchSuggestions';
+import { UploadResponse, PersistedPaymentData, ContactMatch } from './types';
 
 export default function ReconciliationDashboard() {
   const [activeTab, setActiveTab] = useState<'upload' | 'payments' | 'matches'>('upload');
   const [uploadSuccess, setUploadSuccess] = useState<UploadResponse | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PersistedPaymentData | null>(null);
+  const [matchConfirmationMessage, setMatchConfirmationMessage] = useState<string | null>(null);
 
   const handleUploadSuccess = (data: UploadResponse) => {
     setUploadSuccess(data);
@@ -19,6 +23,34 @@ export default function ReconciliationDashboard() {
   const handleUploadError = (error: string) => {
     setUploadError(error);
     setUploadSuccess(null);
+  };
+
+  const handlePaymentSelect = (payment: PersistedPaymentData) => {
+    setSelectedPayment(payment);
+    // Don't auto-navigate anymore - just highlight the payment
+  };
+
+  const handleFindMatches = (payment: PersistedPaymentData) => {
+    setSelectedPayment(payment);
+    setActiveTab('matches'); // Navigate to match suggestions when explicitly requested
+  };
+
+  const handleMatchConfirmed = (payment: PersistedPaymentData, match: ContactMatch) => {
+    setMatchConfirmationMessage(
+      `Successfully matched payment of ${new Intl.NumberFormat('en-GB', {
+        style: 'currency', 
+        currency: 'GBP'
+      }).format(payment.amount)} with ${match.contact.firstName && match.contact.lastName
+        ? `${match.contact.firstName} ${match.contact.lastName}`
+        : match.contact.email || 'contact'
+      }`
+    );
+    setSelectedPayment(null); // Clear selection after confirmation
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setMatchConfirmationMessage(null);
+    }, 5000);
   };
 
   const tabs = [
@@ -103,47 +135,45 @@ export default function ReconciliationDashboard() {
       {activeTab === 'payments' && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-              Payment Processing
-            </h3>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-2xl">💳</span>
-              </div>
-              <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
-                Payment Data Review
-              </h4>
-              <p className="text-gray-500 dark:text-gray-400">
-                Review and validate imported payment transactions
-              </p>
-              <div className="mt-4 text-sm text-gray-400 dark:text-gray-500">
-                Coming soon: Payment list and processing interface
-              </div>
-            </div>
+            <PaymentList 
+              onPaymentSelect={handlePaymentSelect}
+              onFindMatches={handleFindMatches}
+              selectedPayment={selectedPayment}
+            />
           </div>
         </div>
       )}
 
       {activeTab === 'matches' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-              Match Suggestions
-            </h3>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🔗</span>
-              </div>
-              <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
-                Smart Matching
-              </h4>
-              <p className="text-gray-500 dark:text-gray-400">
-                AI-powered suggestions to match payments with GHL contacts
-              </p>
-              <div className="mt-4 text-sm text-gray-400 dark:text-gray-500">
-                Coming soon: Intelligent matching interface
+          {/* Match confirmation success message */}
+          {matchConfirmationMessage && (
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-start space-x-3">
+                <span className="text-green-400 text-lg">✅</span>
+                <div className="flex-1">
+                  <h4 className="font-medium text-green-800 dark:text-green-300">
+                    Match Confirmed!
+                  </h4>
+                  <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+                    {matchConfirmationMessage}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMatchConfirmationMessage(null)}
+                  className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+                >
+                  ✕
+                </button>
               </div>
             </div>
+          )}
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <MatchSuggestions 
+              selectedPayment={selectedPayment}
+              onMatchConfirmed={handleMatchConfirmed}
+            />
           </div>
         </div>
       )}

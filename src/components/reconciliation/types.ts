@@ -32,8 +32,58 @@ export interface PaymentData {
   amount: number;
   paymentDate: Date;
   description: string;
-  source: 'BANK_CSV' | 'STRIPE';
+  source: 'BANK_CSV' | 'STRIPE_REPORT';
   transactionRef?: string;
+  // New customer fields from Stripe CSV
+  customer_name?: string;
+  customer_email?: string;
+  card_address_line1?: string;
+  card_address_postal_code?: string;
+}
+
+// New types for persisted payment data
+export interface PersistedPaymentData {
+  id: string;
+  transactionFingerprint: string;
+  paymentDate: string; // ISO string from API
+  amount: number;
+  source: string;
+  transactionRef: string;
+  description?: string;
+  hashedAccountIdentifier?: string;
+  status: 'pending' | 'processing' | 'matched' | 'confirmed' | 'ignored';
+  uploadedAt: string; // ISO string from API
+  // New customer fields from Stripe CSV
+  customer_name?: string;
+  customer_email?: string;
+  card_address_line1?: string;
+  card_address_postal_code?: string;
+}
+
+export interface PaymentsResponse {
+  success: boolean;
+  payments?: PersistedPaymentData[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  message?: string;
+}
+
+export interface MatchesResponse {
+  success: boolean;
+  suggestions?: ContactMatch[];
+  totalMatches?: number;
+  processingTimeMs?: number;
+  message?: string;
+}
+
+export interface ConfirmResponse {
+  success: boolean;
+  reconciliationLogId?: string;
+  message?: string;
+  ghlUpdateResult?: any;
+  wordpressUpdateResult?: any;
+  errors?: string[];
 }
 
 export interface ContactMatch {
@@ -57,4 +107,36 @@ export interface MatchSuggestion {
   paymentData: PaymentData;
   matches: ContactMatch[];
   status: 'pending' | 'confirmed' | 'rejected';
+}
+
+// Component state types
+export interface PaymentListState {
+  payments: PersistedPaymentData[];
+  loading: boolean;
+  error: string | null;
+  selectedPayment: PersistedPaymentData | null;
+  filters: {
+    status?: string;
+    source?: string;
+    amount?: number;
+    amountExact?: boolean;
+    textSearch?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    showAll?: boolean;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+export interface MatchSuggestionsState {
+  suggestions: ContactMatch[];
+  loading: boolean;
+  error: string | null;
+  selectedPayment: PersistedPaymentData | null;
+  confirmingMatch: string | null; // contactId being confirmed
+  processingTimeMs?: number;
 }

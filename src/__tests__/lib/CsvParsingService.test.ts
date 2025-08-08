@@ -198,7 +198,7 @@ describe('CsvParsingService', () => {
       expect(result.data).toHaveLength(2);
       
       const firstTransaction = result.data![0];
-      expect(firstTransaction.amount).toBe(50.00); // Stripe amounts in cents
+      expect(firstTransaction.amount).toBe(5000); // Preserve absolute values from CSV
       expect(firstTransaction.source).toBe('STRIPE_REPORT');
       expect(firstTransaction.transactionFingerprint).toBe('ch_1234567890abcdef');
       expect(firstTransaction.description).toBe('Membership payment');
@@ -219,8 +219,8 @@ describe('CsvParsingService', () => {
 
       expect(result.success).toBe(true);
       
-      expect(result.data![0].amount).toBe(50.00); // -5000 cents = 50.00 dollars
-      expect(result.data![1].amount).toBe(75.00); // -7500 cents = 75.00 dollars
+      expect(result.data![0].amount).toBe(5000); // Preserve pound values from CSV
+      expect(result.data![1].amount).toBe(7500); // Preserve pound values from CSV
     });
 
     it('should skip duplicate transactions', async () => {
@@ -236,7 +236,7 @@ describe('CsvParsingService', () => {
     it('should skip transactions with zero amounts', async () => {
       const csvWithZeroAmount = `id,Amount,Created (UTC),Description
 "ch_zero","0","2024-01-01T10:00:00Z","Zero amount"
-"ch_valid","-5000","2024-01-02T11:00:00Z","Valid payment"`;
+"ch_valid","50","2024-01-02T11:00:00Z","Valid payment"`;
 
       const result = await service.parseStripeCsv(csvWithZeroAmount);
 
@@ -268,7 +268,7 @@ describe('CsvParsingService', () => {
       expect(result.data).toHaveLength(2);
       
       const firstTransaction = result.data![0];
-      expect(firstTransaction.amount).toBe(50.00); // -5000 cents = 50.00 dollars
+      expect(firstTransaction.amount).toBe(5000); // Preserve pound values from CSV
       expect(firstTransaction.source).toBe('STRIPE_REPORT');
       expect(firstTransaction.transactionFingerprint).toBe('ch_1234567890abcdef');
       expect(firstTransaction.description).toBe('Membership payment');
@@ -282,7 +282,7 @@ describe('CsvParsingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.processed).toBe(1);
-      expect(result.data![0].amount).toBe(35.00);
+      expect(result.data![0].amount).toBe(3500);
       expect(result.data![0].transactionFingerprint).toBe('txn_1234567890');
       expect(result.data![0].description).toBe('Payment received');
     });
@@ -417,6 +417,127 @@ describe('CsvParsingService', () => {
       expect(resultString).not.toContain('87654321');
       expect(resultString).not.toContain('999999.99');
       expect(resultString).not.toContain('Balance');
+    });
+  });
+
+  describe('New Stripe Customer Fields and Currency Fix', () => {
+    it('should extract customer fields from Stripe CSV', async () => {
+      const stripeWithCustomerFields = `id,gross,Created (UTC),Description,customer_name,customer_email,card_address_line1,card_address_postal_code
+"ch_1234567890abcdef","42","2024-01-01T10:00:00Z","Membership payment","John Doe","john@example.com","123 Main St","SW1A 1AA"
+"ch_abcdef1234567890","30","2024-01-02T11:00:00Z","Renewal fee","Jane Smith","jane@example.com","456 Oak Ave","M1 1AA"`;
+
+      const result = await service.parseStripeCsv(stripeWithCustomerFields);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(2);
+      
+      const firstTransaction = result.data![0];
+      expect(firstTransaction.customer_name).toBe('John Doe');
+      expect(firstTransaction.customer_email).toBe('john@example.com');
+      expect(firstTransaction.card_address_line1).toBe('123 Main St');
+      expect(firstTransaction.card_address_postal_code).toBe('SW1A 1AA');
+      
+      const secondTransaction = result.data![1];
+      expect(secondTransaction.customer_name).toBe('Jane Smith');
+      expect(secondTransaction.customer_email).toBe('jane@example.com');
+    });
+
+    it('should handle missing customer fields gracefully', async () => {
+      const stripeWithoutCustomerFields = `id,gross,Created (UTC),Description
+"ch_1234567890abcdef","42","2024-01-01T10:00:00Z","Membership payment"`;
+
+      const result = await service.parseStripeCsv(stripeWithoutCustomerFields);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(1);
+      
+      const transaction = result.data![0];
+      expect(transaction.customer_name).toBeUndefined();
+      expect(transaction.customer_email).toBeUndefined();
+      expect(transaction.card_address_line1).toBeUndefined();
+      expect(transaction.card_address_postal_code).toBeUndefined();
+    });
+
+    it('should preserve pound values correctly (fix currency bug)', async () => {
+      const stripeWithPoundValues = `id,gross,Created (UTC),Description
+"ch_test_42","42","2024-01-01T10:00:00Z","£42 membership"
+"ch_test_20","20","2024-01-02T11:00:00Z","£20 renewal"
+"ch_test_10","10","2024-01-03T11:00:00Z","£10 upgrade"`;
+
+      const result = await service.parseStripeCsv(stripeWithPoundValues);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(3);
+      
+      // Critical: £42 should stay £42, not become £0.42
+      expect(result.data![0].amount).toBe(42);
+      expect(result.data![1].amount).toBe(20);
+      expect(result.data![2].amount).toBe(10);
+    });
+
+    it('should validate customer email format', async () => {
+      const dataWithInvalidEmail: ParsedPaymentData[] = [{
+        transactionFingerprint: 'test123',
+        paymentDate: new Date('2024-01-01'),
+        amount: 42.00,
+        source: 'STRIPE_REPORT',
+        transactionRef: 'test123',
+        customer_email: 'invalid-email-format'
+      }];
+
+      const result = await service.validateData(dataWithInvalidEmail);
+
+      expect(result.valid).toHaveLength(0);
+      expect(result.invalid).toHaveLength(1);
+      expect(result.invalid[0].errors).toContain('Invalid customer email format');
+    });
+
+    it('should validate amount ranges for membership payments', async () => {
+      const dataWithInvalidAmounts: ParsedPaymentData[] = [
+        {
+          transactionFingerprint: 'too_low',
+          paymentDate: new Date('2024-01-01'),
+          amount: 2.00, // Below £5 threshold
+          source: 'STRIPE_REPORT',
+          transactionRef: 'too_low'
+        },
+        {
+          transactionFingerprint: 'too_high',
+          paymentDate: new Date('2024-01-01'),
+          amount: 1000.00, // Above £500 threshold
+          source: 'STRIPE_REPORT',
+          transactionRef: 'too_high'
+        }
+      ];
+
+      const result = await service.validateData(dataWithInvalidAmounts);
+
+      expect(result.valid).toHaveLength(0);
+      expect(result.invalid).toHaveLength(2);
+      expect(result.invalid[0].errors[0]).toContain('outside expected range');
+      expect(result.invalid[1].errors[0]).toContain('outside expected range');
+    });
+
+    it('should trim whitespace from customer fields', async () => {
+      const stripeWithWhitespace = `id,gross,Created (UTC),customer_name,customer_email
+"ch_test","42","2024-01-01T10:00:00Z","  John Doe  ","  john@example.com  "`;
+
+      const result = await service.parseStripeCsv(stripeWithWhitespace);
+
+      expect(result.success).toBe(true);
+      const transaction = result.data![0];
+      expect(transaction.customer_name).toBe('John Doe');
+      expect(transaction.customer_email).toBe('john@example.com');
+    });
+
+    it('should handle Customer_facing_amount field correctly', async () => {
+      const stripeWithCustomerFacingAmount = `id,Customer_facing_amount,Created (UTC),Description
+"ch_test","30.50","2024-01-01T10:00:00Z","Payment"`;
+
+      const result = await service.parseStripeCsv(stripeWithCustomerFacingAmount);
+
+      expect(result.success).toBe(true);
+      expect(result.data![0].amount).toBe(30.50);
     });
   });
 });

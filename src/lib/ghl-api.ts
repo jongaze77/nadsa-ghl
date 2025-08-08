@@ -44,7 +44,7 @@ export function getLocationId() {
   return process.env.GHL_LOCATION_ID || "";
 }
 
-async function fetchWithRetry(
+export async function fetchWithRetry(
   url: string,
   options: RequestInit,
   retryConfig: RetryConfig = defaultRetryConfig

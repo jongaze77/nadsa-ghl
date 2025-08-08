@@ -76,7 +76,11 @@ export class ReconciliationService {
       console.log(`[ReconciliationService] Creating reconciliation log entry`);
       reconciliationLog = await this.createReconciliationLog(request);
       
-      // Step 2: Update GHL contact
+      // Step 2: Update pending payment status to 'matched'
+      console.log(`[ReconciliationService] Updating pending payment status`);
+      await this.updatePendingPaymentStatus(paymentData.transactionFingerprint, 'matched');
+      
+      // Step 3: Update GHL contact
       let ghlUpdateResult;
       try {
         console.log(`[ReconciliationService] Updating GHL contact ${contactId}`);
@@ -96,7 +100,7 @@ export class ReconciliationService {
         };
       }
 
-      // Step 3: Update WordPress user role
+      // Step 4: Update WordPress user role
       let wordpressUpdateResult;
       try {
         console.log(`[ReconciliationService] Updating WordPress user role`);
@@ -257,28 +261,47 @@ export class ReconciliationService {
   }
 
   /**
-   * Update GHL contact with membership renewal information
+   * Update GHL contact with membership renewal information and notes
    */
   private async updateGHLContact(contactId: string, paymentData: ParsedPaymentData): Promise<any> {
-    // Calculate renewal date (1 year from payment date)
-    const paymentDate = new Date(paymentData.paymentDate);
-    const renewalDate = new Date(paymentDate);
-    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+    console.log(`[ReconciliationService] Starting GHL contact update for ${contactId}`);
     
+    // Step 1: Fetch current contact details to validate membership type and get current renewal date
+    const currentContact = await this.fetchContactDetails(contactId);
+    
+    // Step 2: Validate membership type and determine expected payment amount
+    const membershipValidation = this.validateMembershipPayment(currentContact, paymentData);
+    console.log(`[ReconciliationService] Membership validation:`, membershipValidation);
+    
+    // Step 3: Calculate smart renewal date (never go backwards)
+    const smartRenewalDate = this.calculateSmartRenewalDate(paymentData.paymentDate, currentContact.renewalDate);
+    console.log(`[ReconciliationService] Smart renewal date: ${smartRenewalDate.toISOString().split('T')[0]}`);
+    
+    // Step 4: Update membership status and renewal date
     const membershipUpdateData: GHLMembershipUpdateData = {
-      renewalDate,
+      renewalDate: smartRenewalDate,
       membershipStatus: 'active',
       paidTag: true,
       paymentAmount: paymentData.amount,
-      paymentDate,
+      paymentDate: new Date(paymentData.paymentDate),
     };
 
     console.log(`[ReconciliationService] Updating GHL contact with membership data:`, membershipUpdateData);
     
-    return await this.retryOperation(
+    const membershipUpdateResult = await this.retryOperation(
       () => updateMembershipStatus(contactId, membershipUpdateData),
       'GHL membership update'
     );
+    
+    // Step 5: Add reconciliation note to GHL contact
+    const noteResult = await this.addReconciliationNote(contactId, paymentData, membershipValidation, smartRenewalDate);
+    
+    return {
+      membershipUpdate: membershipUpdateResult,
+      noteAdded: noteResult,
+      membershipValidation,
+      renewalDate: smartRenewalDate
+    };
   }
 
   /**
@@ -415,6 +438,254 @@ export class ReconciliationService {
     }
 
     throw lastError || new Error(`${operationName} failed after ${ReconciliationService.RETRY_CONFIG.maxRetries + 1} attempts`);
+  }
+
+  /**
+   * Update pending payment status
+   */
+  private async updatePendingPaymentStatus(transactionFingerprint: string, status: string): Promise<void> {
+    try {
+      const updatedPayment = await prisma.pendingPayment.update({
+        where: { transactionFingerprint },
+        data: { status },
+      });
+      console.log(`[ReconciliationService] Updated payment ${transactionFingerprint} status to ${status}`);
+    } catch (error) {
+      console.error(`[ReconciliationService] Failed to update payment status:`, error);
+      // Don't throw here - this is a non-critical update
+      // The reconciliation log is the source of truth
+    }
+  }
+
+  /**
+   * Fetch current contact details from GHL to get membership type and renewal date
+   */
+  private async fetchContactDetails(contactId: string): Promise<{
+    membershipType: string | null;
+    renewalDate: Date | null;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  }> {
+    try {
+      const { fetchContactFromGHL } = await import('./ghl-api');
+      const ghlContact = await fetchContactFromGHL(contactId);
+      
+      // Extract current renewal date from custom fields
+      let currentRenewalDate: Date | null = null;
+      const renewalDateFieldId = 'cWMPNiNAfReHOumOhBB2'; // renewal_date field ID
+      
+      if (ghlContact.customFields) {
+        const renewalField = Array.isArray(ghlContact.customFields)
+          ? ghlContact.customFields.find((f: any) => f.id === renewalDateFieldId)
+          : ghlContact.customFields[renewalDateFieldId];
+          
+        if (renewalField) {
+          const dateValue = typeof renewalField === 'object' ? renewalField.value : renewalField;
+          if (dateValue) {
+            currentRenewalDate = new Date(dateValue);
+          }
+        }
+      }
+      
+      // Extract membership type
+      const membershipTypeFieldId = 'gH97LlNC9Y4PlkKVlY8V';
+      let membershipType: string | null = null;
+      
+      if (ghlContact.customFields) {
+        const membershipField = Array.isArray(ghlContact.customFields)
+          ? ghlContact.customFields.find((f: any) => f.id === membershipTypeFieldId)
+          : ghlContact.customFields[membershipTypeFieldId];
+          
+        if (membershipField) {
+          membershipType = typeof membershipField === 'object' ? membershipField.value : membershipField;
+        }
+      }
+      
+      return {
+        membershipType: membershipType?.trim() || null,
+        renewalDate: currentRenewalDate,
+        firstName: ghlContact.firstName || null,
+        lastName: ghlContact.lastName || null,
+        email: ghlContact.email || null
+      };
+    } catch (error) {
+      console.error(`[ReconciliationService] Failed to fetch contact details for ${contactId}:`, error);
+      return {
+        membershipType: null,
+        renewalDate: null,
+        firstName: null,
+        lastName: null,
+        email: null
+      };
+    }
+  }
+
+  /**
+   * Validate membership type and payment amount
+   */
+  private validateMembershipPayment(contact: {
+    membershipType: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  }, paymentData: ParsedPaymentData): {
+    isValid: boolean;
+    membershipType: string | null;
+    expectedAmount: string;
+    actualAmount: number;
+    warning?: string;
+  } {
+    const membershipFees = {
+      'Full': { min: 60, max: 80, typical: 70 },
+      'Associate': { min: 40, max: 60, typical: 50 },
+      'Single': { min: 60, max: 80, typical: 70 }, // Same as Full
+      'Double': { min: 60, max: 80, typical: 70 }, // Same as Full
+      'Newsletter Only': { min: 10, max: 20, typical: 15 }
+    };
+    
+    const membershipType = contact.membershipType;
+    const paymentAmount = paymentData.amount;
+    
+    if (!membershipType) {
+      return {
+        isValid: false,
+        membershipType: null,
+        expectedAmount: 'Unknown - no membership type recorded',
+        actualAmount: paymentAmount,
+        warning: `Contact ${contact.firstName} ${contact.lastName} has no membership type recorded in GHL`
+      };
+    }
+    
+    // Normalize membership type
+    let normalizedType = membershipType;
+    const typeMap: Record<string, string> = {
+      'single': 'Single',
+      'double': 'Double', 
+      'associate': 'Associate',
+      'full': 'Full',
+      'newsletter': 'Newsletter Only',
+      'newsletter only': 'Newsletter Only'
+    };
+    
+    const lowerType = membershipType.toLowerCase().trim();
+    if (typeMap[lowerType]) {
+      normalizedType = typeMap[lowerType];
+    }
+    
+    const feeRange = membershipFees[normalizedType as keyof typeof membershipFees];
+    
+    if (!feeRange) {
+      return {
+        isValid: false,
+        membershipType: normalizedType,
+        expectedAmount: 'Unknown membership type',
+        actualAmount: paymentAmount,
+        warning: `Unknown membership type: ${normalizedType}`
+      };
+    }
+    
+    const isWithinRange = paymentAmount >= feeRange.min && paymentAmount <= feeRange.max;
+    const expectedRange = `£${feeRange.min}-${feeRange.max} (typical: £${feeRange.typical})`;
+    
+    return {
+      isValid: isWithinRange,
+      membershipType: normalizedType,
+      expectedAmount: expectedRange,
+      actualAmount: paymentAmount,
+      warning: isWithinRange ? undefined : `Payment amount £${paymentAmount} is outside expected range ${expectedRange}`
+    };
+  }
+
+  /**
+   * Calculate smart renewal date - never go backwards from existing renewal date
+   */
+  private calculateSmartRenewalDate(paymentDate: string | Date, currentRenewalDate: Date | null): Date {
+    const paymentDateObj = new Date(paymentDate);
+    const newRenewalDate = new Date(paymentDateObj);
+    newRenewalDate.setFullYear(newRenewalDate.getFullYear() + 1);
+    
+    if (currentRenewalDate) {
+      // If there's an existing renewal date, never go backwards
+      if (newRenewalDate > currentRenewalDate) {
+        console.log(`[ReconciliationService] Advancing renewal date from ${currentRenewalDate.toISOString().split('T')[0]} to ${newRenewalDate.toISOString().split('T')[0]}`);
+        return newRenewalDate;
+      } else {
+        console.log(`[ReconciliationService] Keeping existing renewal date ${currentRenewalDate.toISOString().split('T')[0]} (would not advance from payment date ${paymentDateObj.toISOString().split('T')[0]})`);
+        return currentRenewalDate;
+      }
+    } else {
+      console.log(`[ReconciliationService] Setting initial renewal date to ${newRenewalDate.toISOString().split('T')[0]} (payment date + 1 year)`);
+      return newRenewalDate;
+    }
+  }
+
+  /**
+   * Add a reconciliation note to the GHL contact
+   */
+  private async addReconciliationNote(
+    contactId: string,
+    paymentData: ParsedPaymentData,
+    validation: { isValid: boolean; membershipType: string | null; expectedAmount: string; actualAmount: number; warning?: string },
+    renewalDate: Date
+  ): Promise<any> {
+    try {
+      console.log(`[ReconciliationService] Adding reconciliation note to contact ${contactId}`);
+      
+      const paymentDateStr = new Date(paymentData.paymentDate).toLocaleDateString('en-GB');
+      const renewalDateStr = renewalDate.toLocaleDateString('en-GB');
+      const timestamp = new Date().toLocaleString('en-GB');
+      
+      let noteText = `🔄 Payment Reconciliation - ${timestamp}\n`;
+      noteText += `💳 Payment: £${paymentData.amount} on ${paymentDateStr}\n`;
+      noteText += `📝 Reference: ${paymentData.transactionRef || paymentData.transactionFingerprint}\n`;
+      
+      if (paymentData.customer_name) {
+        noteText += `👤 Customer Name: ${paymentData.customer_name}\n`;
+      }
+      if (paymentData.customer_email) {
+        noteText += `📧 Customer Email: ${paymentData.customer_email}\n`;
+      }
+      
+      noteText += `🏷️ Membership Type: ${validation.membershipType || 'Unknown'}\n`;
+      noteText += `💰 Expected Amount: ${validation.expectedAmount}\n`;
+      noteText += `📅 Renewal Date: ${renewalDateStr}\n`;
+      
+      if (validation.warning) {
+        noteText += `⚠️ Warning: ${validation.warning}\n`;
+      }
+      
+      if (!validation.isValid) {
+        noteText += `❌ Validation: Payment amount does not match expected range\n`;
+      } else {
+        noteText += `✅ Validation: Payment amount confirmed\n`;
+      }
+      
+      noteText += `🔧 Source: Automated reconciliation system`;
+      
+      // Add note via GHL API
+      const { fetchWithRetry } = await import('./ghl-api');
+      const GHL_API_BASE = 'https://rest.gohighlevel.com/v1';
+      const notePayload = {
+        body: noteText,
+        contactId: contactId
+      };
+      
+      const response = await fetchWithRetry(
+        `${GHL_API_BASE}/contacts/${contactId}/notes`,
+        {
+          method: 'POST',
+          body: JSON.stringify(notePayload)
+        }
+      );
+      
+      const result = await response.json();
+      console.log(`[ReconciliationService] Successfully added note to contact ${contactId}`);
+      return result;
+      
+    } catch (error) {
+      console.error(`[ReconciliationService] Failed to add note to contact ${contactId}:`, error);
+      throw error;
+    }
   }
 
   /**

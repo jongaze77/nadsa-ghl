@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CsvParsingService } from '@/lib/CsvParsingService';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const runtime = "nodejs";
@@ -79,6 +80,18 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
       );
     }
 
+    // Get user from database for ID
+    const user = await prisma.user.findUnique({
+      where: { username: session.user.name! },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 401 }
+      );
+    }
+
     // Process CSV using CsvParsingService
     const csvParser = new CsvParsingService();
     let result;
@@ -103,12 +116,70 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
         );
       }
 
+      // Persist parsed payment data to database
+      let persistedCount = 0;
+      let alreadyExistsCount = 0;
+      const persistErrors: string[] = [];
+
+      if (result.data && result.data.length > 0) {
+        for (const paymentData of result.data) {
+          try {
+            // Check if payment already exists in PendingPayment
+            const existingPending = await prisma.pendingPayment.findUnique({
+              where: { transactionFingerprint: paymentData.transactionFingerprint },
+            });
+
+            if (existingPending) {
+              alreadyExistsCount++;
+              continue;
+            }
+
+            // Prepare metadata with new customer fields
+            const metadata: any = {};
+            if (paymentData.customer_name) metadata.customer_name = paymentData.customer_name;
+            if (paymentData.customer_email) metadata.customer_email = paymentData.customer_email;
+            if (paymentData.card_address_line1) metadata.card_address_line1 = paymentData.card_address_line1;
+            if (paymentData.card_address_postal_code) metadata.card_address_postal_code = paymentData.card_address_postal_code;
+
+            // Create PendingPayment record
+            await prisma.pendingPayment.create({
+              data: {
+                transactionFingerprint: paymentData.transactionFingerprint,
+                paymentDate: paymentData.paymentDate,
+                amount: paymentData.amount,
+                source: paymentData.source,
+                transactionRef: paymentData.transactionRef,
+                description: paymentData.description,
+                hashedAccountIdentifier: paymentData.hashedAccountIdentifier,
+                uploadedByUserId: user.id,
+                status: 'pending',
+                metadata: Object.keys(metadata).length > 0 ? metadata : null,
+              },
+            });
+
+            persistedCount++;
+          } catch (error) {
+            console.error('Error persisting payment data:', error);
+            persistErrors.push(
+              `Failed to persist payment ${paymentData.transactionFingerprint}: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`
+            );
+          }
+        }
+      }
+
       return NextResponse.json({
         success: true,
         data: result.data,
-        processed: result.processed,
-        skipped: result.skipped,
-        message: `Successfully processed ${result.processed} payments${result.skipped > 0 ? `, skipped ${result.skipped}` : ''}`,
+        processed: persistedCount,
+        skipped: result.skipped + alreadyExistsCount,
+        message: `Successfully processed and persisted ${persistedCount} payments${
+          result.skipped + alreadyExistsCount > 0 
+            ? `, skipped ${result.skipped + alreadyExistsCount} (${result.skipped} parsing errors + ${alreadyExistsCount} already exists)` 
+            : ''
+        }${persistErrors.length > 0 ? `. ${persistErrors.length} persistence errors.` : ''}`,
+        errors: persistErrors.length > 0 ? persistErrors : undefined,
       });
 
     } catch (error) {

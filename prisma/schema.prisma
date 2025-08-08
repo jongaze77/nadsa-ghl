@@ -24,6 +24,7 @@ model User {
   
   securityEvents SecurityEvent[]
   reconciliationLogs ReconciliationLog[]
+  pendingPayments PendingPayment[]
 }
 
 model Contact {
@@ -88,6 +89,28 @@ model PaymentSource {
   contact Contact @relation(fields: [contactId], references: [id])
   
   @@index([contactId])
+}
+
+model PendingPayment {
+  id                      String   @id @default(cuid())
+  transactionFingerprint  String   @unique // Unique identifier for duplicate detection
+  paymentDate            DateTime
+  amount                 Decimal  @db.Money // Precise decimal for financial data
+  source                 String   // 'BANK_CSV' | 'STRIPE_REPORT'
+  transactionRef         String   // Original transaction reference
+  description            String?  // Transaction description
+  hashedAccountIdentifier String? // Hashed account identifier (for bank transactions)
+  status                 String   @default("pending") // 'pending', 'processing', 'matched', 'confirmed'
+  uploadedAt             DateTime @default(now())
+  uploadedByUserId       Int      // Foreign key to User who uploaded
+  metadata               Json?    // Additional transaction context
+  
+  uploadedBy User @relation(fields: [uploadedByUserId], references: [id])
+  
+  @@index([uploadedByUserId])
+  @@index([status])
+  @@index([paymentDate, amount]) // Composite index for matching queries
+  @@index([uploadedAt])
 }
 
 model ReconciliationLog {

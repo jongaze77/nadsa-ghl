@@ -14,6 +14,7 @@ export default function ReconciliationDashboard() {
   const [showMatchesModal, setShowMatchesModal] = useState<boolean>(false);
   const [matchConfirmationMessage, setMatchConfirmationMessage] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [showSkippedDetails, setShowSkippedDetails] = useState<boolean>(false);
 
   const handleUploadSuccess = (data: UploadResponse) => {
     setUploadSuccess(data);
@@ -116,9 +117,47 @@ export default function ReconciliationDashboard() {
                     <div className="mt-2 text-sm text-green-600 dark:text-green-400">
                       <span className="font-medium">Processed:</span> {uploadSuccess.processed} payments
                       {uploadSuccess.skipped !== undefined && uploadSuccess.skipped > 0 && (
-                        <span className="ml-3">
-                          <span className="font-medium">Skipped:</span> {uploadSuccess.skipped} duplicates
-                        </span>
+                        <div className="ml-3 mt-1">
+                          <span className="font-medium">Skipped:</span> {uploadSuccess.skipped} total
+                          {uploadSuccess.parsingErrors !== undefined && uploadSuccess.parsingErrors > 0 && (
+                            <span className="block ml-2 text-yellow-600 dark:text-yellow-400">
+                              • {uploadSuccess.parsingErrors} parsing errors
+                            </span>
+                          )}
+                          {uploadSuccess.duplicates !== undefined && uploadSuccess.duplicates > 0 && (
+                            <span className="block ml-2 text-blue-600 dark:text-blue-400">
+                              • {uploadSuccess.duplicates} duplicates
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {uploadSuccess.skippedDetails && uploadSuccess.skippedDetails.length > 0 && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => setShowSkippedDetails(!showSkippedDetails)}
+                            className="text-xs text-green-800 dark:text-green-200 underline hover:no-underline"
+                          >
+                            {showSkippedDetails ? 'Hide' : 'Show'} skipped records details
+                          </button>
+                          {showSkippedDetails && (
+                            <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800 max-h-48 overflow-y-auto">
+                              <h5 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Skipped Records:</h5>
+                              {uploadSuccess.skippedDetails.map((item, index) => (
+                                <div key={index} className="text-xs text-yellow-700 dark:text-yellow-300 mb-1">
+                                  <span className="inline-block w-20 font-medium">
+                                    {item.type === 'parsing_error' ? '⚠️ Parse:' : '🔁 Duplicate:'}
+                                  </span>
+                                  <span>{item.reason}</span>
+                                  {item.reference && (
+                                    <span className="ml-2 text-yellow-600 dark:text-yellow-400 font-mono">
+                                      ({item.reference.substring(0, 12)}...)
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

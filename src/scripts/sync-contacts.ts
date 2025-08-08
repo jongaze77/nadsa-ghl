@@ -10,6 +10,7 @@ async function main() {
   let totalCreated = 0;
   let totalUpdated = 0;
   let totalErrors = 0;
+  let totalSkippedSpammers = 0;
 
   try {
     // --- Fetch all contacts from all pages ---
@@ -62,6 +63,14 @@ async function main() {
         // Defensive: If GHL API returns {contact: {...}}, unwrap it
         const source = correctGhlContact.contact || correctGhlContact;
 
+        // Skip contacts with "spammer" tag
+        const contactTags = source.tags || [];
+        if (contactTags.includes('spammer')) {
+          console.log(`  🚫 Skipping contact with "spammer" tag: ${source.firstName || ''} ${source.lastName || ''} (${source.id})`);
+          totalSkippedSpammers++;
+          continue;
+        }
+
         // Map GHL data to Prisma
         const prismaContact = mapGHLContactToPrisma(source);
         const existingContact = await prisma.contact.findUnique({
@@ -98,6 +107,7 @@ async function main() {
     console.log('Sync completed.');
     console.log(`Created: ${totalCreated}`);
     console.log(`Updated: ${totalUpdated}`);
+    console.log(`Skipped (spammers): ${totalSkippedSpammers}`);
     console.log(`Errors: ${totalErrors}`);
 
   } catch (error) {

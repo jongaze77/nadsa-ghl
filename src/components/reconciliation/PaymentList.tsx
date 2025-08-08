@@ -24,9 +24,10 @@ interface PaymentListProps {
   onPaymentSelect?: (payment: PersistedPaymentData) => void;
   onFindMatches?: (payment: PersistedPaymentData) => void;
   selectedPayment?: PersistedPaymentData | null;
+  refreshTrigger?: number;
 }
 
-export default function PaymentList({ onPaymentSelect, onFindMatches, selectedPayment }: PaymentListProps) {
+export default function PaymentList({ onPaymentSelect, onFindMatches, selectedPayment, refreshTrigger }: PaymentListProps) {
   const [state, setState] = useState<PaymentListState>({
     payments: [],
     loading: false,
@@ -108,7 +109,7 @@ export default function PaymentList({ onPaymentSelect, onFindMatches, selectedPa
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       }));
     }
-  }, [state.pagination.page, state.pagination.limit, state.filters.status, state.filters.source, state.filters.amount, state.filters.amountExact, debouncedTextSearch, state.filters.dateFrom, state.filters.dateTo, state.filters.showAll]);
+  }, [state.pagination.page, state.pagination.limit, state.filters.status, state.filters.source, state.filters.amount, state.filters.amountExact, debouncedTextSearch, state.filters.dateFrom, state.filters.dateTo, state.filters.showAll, refreshTrigger]);
 
   // Effect to fetch payments on mount and when filters change
   useEffect(() => {

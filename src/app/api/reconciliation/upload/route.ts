@@ -13,6 +13,9 @@ interface UploadResponse {
   errors?: string[];
   processed?: number;
   skipped?: number;
+  parsingErrors?: number;
+  duplicates?: number;
+  skippedDetails?: Array<{ type: string; reason: string; reference?: string }>;
   message?: string;
 }
 
@@ -120,6 +123,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
       let persistedCount = 0;
       let alreadyExistsCount = 0;
       const persistErrors: string[] = [];
+      const skippedDetails: Array<{ type: string; reason: string; reference?: string }> = [];
 
       if (result.data && result.data.length > 0) {
         for (const paymentData of result.data) {
@@ -131,6 +135,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
 
             if (existingPending) {
               alreadyExistsCount++;
+              skippedDetails.push({
+                type: 'duplicate',
+                reason: 'Payment already exists in database',
+                reference: paymentData.transactionFingerprint
+              });
               continue;
             }
 
@@ -169,14 +178,27 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
         }
       }
 
+      // Add parsing error details to skippedDetails
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach(error => {
+          skippedDetails.push({
+            type: 'parsing_error',
+            reason: error
+          });
+        });
+      }
+
       return NextResponse.json({
         success: true,
         data: result.data,
         processed: persistedCount,
         skipped: result.skipped + alreadyExistsCount,
+        parsingErrors: result.skipped,
+        duplicates: alreadyExistsCount,
+        skippedDetails,
         message: `Successfully processed and persisted ${persistedCount} payments${
           result.skipped + alreadyExistsCount > 0 
-            ? `, skipped ${result.skipped + alreadyExistsCount} (${result.skipped} parsing errors + ${alreadyExistsCount} already exists)` 
+            ? `, skipped ${result.skipped + alreadyExistsCount} (${result.skipped} parsing errors + ${alreadyExistsCount} duplicates)` 
             : ''
         }${persistErrors.length > 0 ? `. ${persistErrors.length} persistence errors.` : ''}`,
         errors: persistErrors.length > 0 ? persistErrors : undefined,

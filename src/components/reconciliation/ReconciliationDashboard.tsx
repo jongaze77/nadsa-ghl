@@ -12,6 +12,7 @@ export default function ReconciliationDashboard() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PersistedPaymentData | null>(null);
   const [matchConfirmationMessage, setMatchConfirmationMessage] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   const handleUploadSuccess = (data: UploadResponse) => {
     setUploadSuccess(data);
@@ -46,6 +47,7 @@ export default function ReconciliationDashboard() {
       }`
     );
     setSelectedPayment(null); // Clear selection after confirmation
+    setRefreshTrigger(prev => prev + 1); // Trigger payment list refresh
     
     // Clear success message after 5 seconds
     setTimeout(() => {
@@ -139,6 +141,7 @@ export default function ReconciliationDashboard() {
               onPaymentSelect={handlePaymentSelect}
               onFindMatches={handleFindMatches}
               selectedPayment={selectedPayment}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         </div>

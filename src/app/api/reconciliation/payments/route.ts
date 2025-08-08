@@ -80,9 +80,9 @@ export async function GET(req: NextRequest): Promise<NextResponse<PaymentsRespon
     if (status && ['pending', 'processing', 'matched', 'confirmed', 'ignored'].includes(status)) {
       where.status = status;
     } else if (!showAll && !status) {
-      // By default, show pending, processing, and matched payments (exclude confirmed and ignored)
+      // By default, exclude matched, confirmed, and ignored payments
       where.status = {
-        in: ['pending', 'processing', 'matched']
+        in: ['pending', 'processing']
       };
     }
     if (source && ['BANK_CSV', 'STRIPE_REPORT'].includes(source)) {

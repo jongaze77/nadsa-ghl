@@ -35,7 +35,7 @@ export default function PaymentList({ onPaymentSelect, onFindMatches, selectedPa
     filters: {
       status: undefined, // No specific status filter
       source: undefined,
-      showAll: false, // Default to hiding confirmed/ignored payments (shows pending/processing/matched)
+      showAll: false, // Default to hiding matched/confirmed/ignored payments
     },
     pagination: {
       page: 1,
@@ -431,7 +431,7 @@ export default function PaymentList({ onPaymentSelect, onFindMatches, selectedPa
                 }))}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              Show all payments (including confirmed and ignored)
+              Show all payments (including matched, confirmed, and ignored)
             </label>
           </div>
 

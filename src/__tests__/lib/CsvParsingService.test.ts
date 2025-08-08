@@ -138,6 +138,50 @@ describe('CsvParsingService', () => {
       expect(result.skipped).toBe(1);
       expect(result.errors?.[0]).toContain('Invalid date format');
     });
+
+    it('should parse UK date format (dd/mm/yyyy) correctly', async () => {
+      const ukDateCsv = `Transaction Date,Transaction Type,Sort Code,Account Number,Transaction Description,Debit Amount,Credit Amount,Balance
+"31/07/2025","Credit","12-34-56","12345678","MEMBERSHIP PAYMENT","","50.00","1000.00"
+"18/06/2025","Credit","12-34-56","12345678","RENEWAL FEE","","75.00","1075.00"`;
+
+      const result = await service.parseLloydsBankCsv(ukDateCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(2);
+      expect(result.skipped).toBe(0);
+      
+      // Verify dates are parsed correctly (31st July 2025, 18th June 2025)
+      expect(result.data![0].paymentDate.getMonth()).toBe(6); // July (0-indexed)
+      expect(result.data![0].paymentDate.getDate()).toBe(31);
+      expect(result.data![0].paymentDate.getFullYear()).toBe(2025);
+      
+      expect(result.data![1].paymentDate.getMonth()).toBe(5); // June (0-indexed)
+      expect(result.data![1].paymentDate.getDate()).toBe(18);
+      expect(result.data![1].paymentDate.getFullYear()).toBe(2025);
+    });
+
+    it('should handle mixed date formats (UK and US)', async () => {
+      const mixedDateCsv = `Transaction Date,Transaction Type,Sort Code,Account Number,Transaction Description,Debit Amount,Credit Amount,Balance
+"31/07/2025","Credit","12-34-56","12345678","UK FORMAT","","50.00","1000.00"
+"01/05/2025","Credit","12-34-56","12345678","AMBIGUOUS FORMAT","","25.00","1025.00"
+"2025-03-15","Credit","12-34-56","12345678","ISO FORMAT","","30.00","1055.00"`;
+
+      const result = await service.parseLloydsBankCsv(mixedDateCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(3);
+      
+      // 31/07/2025 should be parsed as July 31st
+      expect(result.data![0].paymentDate.getMonth()).toBe(6);
+      expect(result.data![0].paymentDate.getDate()).toBe(31);
+      
+      // 01/05/2025 could be May 1st or Jan 5th, but should parse consistently
+      expect(result.data![1].paymentDate).toBeInstanceOf(Date);
+      
+      // ISO format should parse correctly
+      expect(result.data![2].paymentDate.getMonth()).toBe(2); // March
+      expect(result.data![2].paymentDate.getDate()).toBe(15);
+    });
   });
 
   describe('parseStripeCsv', () => {
@@ -202,13 +246,69 @@ describe('CsvParsingService', () => {
     });
 
     it('should handle missing required headers', async () => {
-      const invalidCsv = `id,total,date
+      const invalidCsv = `identifier,value,timestamp
 "ch_123","5000","2024-01-01"`;
 
       const result = await service.parseStripeCsv(invalidCsv);
 
       expect(result.success).toBe(false);
-      expect(result.errors).toContain('Missing required headers: Amount, Created (UTC)');
+      expect(result.errors?.[0]).toContain('Required');
+    });
+
+    it('should parse Stripe CSV with real-world headers (source_id, gross, created_utc)', async () => {
+      const realWorldStripeCsv = `source_id,gross,created_utc,description,fee,net,currency
+"ch_1234567890abcdef","-5000","2024-01-01T10:00:00Z","Membership payment","150","4850","usd"
+"ch_abcdef1234567890","-7500","2024-01-02T11:00:00Z","Annual subscription","225","7275","usd"`;
+
+      const result = await service.parseStripeCsv(realWorldStripeCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(2);
+      expect(result.skipped).toBe(0);
+      expect(result.data).toHaveLength(2);
+      
+      const firstTransaction = result.data![0];
+      expect(firstTransaction.amount).toBe(50.00); // -5000 cents = 50.00 dollars
+      expect(firstTransaction.source).toBe('STRIPE_REPORT');
+      expect(firstTransaction.transactionFingerprint).toBe('ch_1234567890abcdef');
+      expect(firstTransaction.description).toBe('Membership payment');
+    });
+
+    it('should handle Stripe CSV with alternative header names', async () => {
+      const alternativeHeadersCsv = `transaction_id,total,date,memo
+"txn_1234567890","3500","2024-01-01T10:00:00Z","Payment received"`;
+
+      const result = await service.parseStripeCsv(alternativeHeadersCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(1);
+      expect(result.data![0].amount).toBe(35.00);
+      expect(result.data![0].transactionFingerprint).toBe('txn_1234567890');
+      expect(result.data![0].description).toBe('Payment received');
+    });
+
+    it('should handle Stripe CSV with missing optional description field', async () => {
+      const noDescriptionCsv = `source_id,gross,created_utc
+"ch_1234567890","-5000","2024-01-01T10:00:00Z"`;
+
+      const result = await service.parseStripeCsv(noDescriptionCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(1);
+      expect(result.data![0].description).toBe('Stripe transaction ch_1234567890');
+    });
+
+    it('should fail gracefully when no required headers can be mapped', async () => {
+      const invalidHeadersCsv = `unknown_field1,unknown_field2,unknown_field3
+"value1","value2","value3"`;
+
+      const result = await service.parseStripeCsv(invalidHeadersCsv);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.some(error => error.includes('Required ID field not found'))).toBe(true);
+      expect(result.errors!.some(error => error.includes('Required Amount field not found'))).toBe(true);
+      expect(result.errors!.some(error => error.includes('Required Created field not found'))).toBe(true);
     });
   });
 

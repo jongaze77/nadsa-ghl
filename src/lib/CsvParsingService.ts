@@ -38,11 +38,27 @@ export interface StripeCsvRow {
   [key: string]: string;
 }
 
+interface StripeFieldMapping {
+  id: string[];
+  amount: string[];
+  created: string[];
+  description: string[];
+}
+
 export class CsvParsingService {
   private logger: Console;
+  private stripeFieldMapping: StripeFieldMapping;
 
   constructor() {
     this.logger = console;
+    
+    // Define possible field names for Stripe CSV mapping
+    this.stripeFieldMapping = {
+      id: ['id', 'source_id', 'transaction_id', 'charge_id'],
+      amount: ['Amount', 'amount', 'gross', 'Gross', 'total', 'Total'],
+      created: ['Created (UTC)', 'created_utc', 'created', 'date', 'Date', 'timestamp'],
+      description: ['Description', 'description', 'memo', 'note', 'details']
+    };
   }
 
   async parseLloydsBankCsv(csvContent: string): Promise<CsvParsingResult> {
@@ -175,13 +191,14 @@ export class CsvParsingService {
       }
 
       const headers = this.parseCsvLine(lines[0]);
-      const requiredHeaders = ['id', 'Amount', 'Created (UTC)'];
       
-      const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
-      if (missingHeaders.length > 0) {
+      // Map actual headers to expected fields
+      const headerMapping = this.mapStripeHeaders(headers);
+      
+      if (!headerMapping.success) {
         return {
           success: false,
-          errors: [`Missing required headers: ${missingHeaders.join(', ')}`],
+          errors: headerMapping.errors || ['Failed to map required Stripe headers'],
           processed: 0,
           skipped: 0
         };
@@ -191,6 +208,8 @@ export class CsvParsingService {
       const errors: string[] = [];
       let processed = 0;
       let skipped = 0;
+      
+      const { idIndex, amountIndex, createdIndex, descriptionIndex } = headerMapping.mapping!;
 
       for (let i = 1; i < lines.length; i++) {
         try {
@@ -201,19 +220,20 @@ export class CsvParsingService {
             continue;
           }
 
-          const row: StripeCsvRow = headers.reduce((obj, header, index) => {
-            obj[header] = values[index];
-            return obj;
-          }, {} as StripeCsvRow);
+          // Extract values using mapped indices
+          const id = values[idIndex];
+          const amountStr = values[amountIndex];
+          const createdStr = values[createdIndex];
+          const description = descriptionIndex !== -1 ? values[descriptionIndex] : '';
 
-          const amount = Math.abs(parseFloat(row.Amount) / 100); // Stripe amounts are in cents
+          const amount = Math.abs(parseFloat(amountStr) / 100); // Stripe amounts are in cents
           if (amount <= 0) {
             skipped++;
             continue;
           }
 
-          // Use Stripe source_id as transaction fingerprint
-          const transactionFingerprint = row.id;
+          // Use Stripe transaction id as transaction fingerprint
+          const transactionFingerprint = id;
 
           // Check for existing transaction
           const existingTransaction = await prisma.reconciliationLog.findUnique({
@@ -227,11 +247,11 @@ export class CsvParsingService {
 
           const parsedData: ParsedPaymentData = {
             transactionFingerprint,
-            paymentDate: new Date(row['Created (UTC)']),
+            paymentDate: new Date(createdStr),
             amount,
             source: 'STRIPE_REPORT',
-            transactionRef: row.id,
-            description: row.Description || `Stripe transaction ${row.id}`
+            transactionRef: id,
+            description: description || `Stripe transaction ${id}`
           };
 
           data.push(parsedData);
@@ -260,6 +280,69 @@ export class CsvParsingService {
         skipped: 0
       };
     }
+  }
+
+  private mapStripeHeaders(headers: string[]): { success: boolean; errors?: string[]; mapping?: { idIndex: number; amountIndex: number; createdIndex: number; descriptionIndex: number } } {
+    const mapping = {
+      idIndex: -1,
+      amountIndex: -1,
+      createdIndex: -1,
+      descriptionIndex: -1
+    };
+    
+    const errors: string[] = [];
+    
+    // Find matching headers for each required field
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      
+      // Check ID field
+      if (mapping.idIndex === -1 && this.stripeFieldMapping.id.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.idIndex = i;
+      }
+      
+      // Check Amount field
+      if (mapping.amountIndex === -1 && this.stripeFieldMapping.amount.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.amountIndex = i;
+      }
+      
+      // Check Created field
+      if (mapping.createdIndex === -1 && this.stripeFieldMapping.created.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.createdIndex = i;
+      }
+      
+      // Check Description field (optional)
+      if (mapping.descriptionIndex === -1 && this.stripeFieldMapping.description.some(field => 
+        header.toLowerCase().includes(field.toLowerCase()) || field.toLowerCase().includes(header.toLowerCase()))) {
+        mapping.descriptionIndex = i;
+      }
+    }
+    
+    // Validate required fields were found
+    if (mapping.idIndex === -1) {
+      errors.push(`Required ID field not found. Looking for one of: ${this.stripeFieldMapping.id.join(', ')}`);
+    }
+    
+    if (mapping.amountIndex === -1) {
+      errors.push(`Required Amount field not found. Looking for one of: ${this.stripeFieldMapping.amount.join(', ')}`);
+    }
+    
+    if (mapping.createdIndex === -1) {
+      errors.push(`Required Created field not found. Looking for one of: ${this.stripeFieldMapping.created.join(', ')}`);
+    }
+    
+    if (errors.length > 0) {
+      this.logger.error('Stripe header mapping failed:', errors);
+      this.logger.error('Available headers:', headers);
+      return { success: false, errors };
+    }
+    
+    this.logger.log(`Stripe header mapping successful: ID=${headers[mapping.idIndex]}, Amount=${headers[mapping.amountIndex]}, Created=${headers[mapping.createdIndex]}${mapping.descriptionIndex !== -1 ? `, Description=${headers[mapping.descriptionIndex]}` : ''}`);
+    
+    return { success: true, mapping };
   }
 
   private parseCsvLine(line: string): string[] {
@@ -294,10 +377,47 @@ export class CsvParsingService {
   }
 
   private parseDate(dateString: string): Date {
-    const date = new Date(dateString);
+    // First try standard parsing
+    let date = new Date(dateString);
+    
+    // If standard parsing fails or gives invalid date, try UK format detection
     if (isNaN(date.getTime())) {
-      throw new Error(`Invalid date format: ${dateString}`);
+      // Check for UK date format (dd/mm/yyyy or dd-mm-yyyy)
+      const ukDateMatch = dateString.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (ukDateMatch) {
+        const [, day, month, year] = ukDateMatch;
+        this.logger.log(`Attempting UK date parsing: ${dateString} -> ${day}/${month}/${year}`);
+        // Create date in US format for parsing (mm/dd/yyyy)
+        const usFormatDate = `${month}/${day}/${year}`;
+        date = new Date(usFormatDate);
+        
+        if (isNaN(date.getTime())) {
+          throw new Error(`Invalid date format: ${dateString} (failed UK format parsing - converted to ${usFormatDate})`);
+        }
+        this.logger.log(`Successfully parsed UK date: ${dateString} -> ${date.toISOString()}`);
+        return date;
+      }
+      
+      throw new Error(`Invalid date format: ${dateString} (unrecognized format - expected dd/mm/yyyy, mm/dd/yyyy, or ISO format)`);
     }
+    
+    // For valid standard dates, check if this might be ambiguous UK format
+    // If day > 12, it's definitely UK format, reparse correctly
+    const standardDateMatch = dateString.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (standardDateMatch) {
+      const [, firstNum, secondNum] = standardDateMatch;
+      const first = parseInt(firstNum, 10);
+      
+      // If first number > 12, this is definitely UK format (day/month/year)
+      if (first > 12) {
+        const usFormatDate = `${secondNum}/${firstNum}/${standardDateMatch[3]}`;
+        const correctedDate = new Date(usFormatDate);
+        if (!isNaN(correctedDate.getTime())) {
+          return correctedDate;
+        }
+      }
+    }
+    
     return date;
   }
 

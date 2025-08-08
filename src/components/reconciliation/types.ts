@@ -9,6 +9,24 @@ export interface UploadedFile {
   status: 'uploaded' | 'processing' | 'completed' | 'error';
 }
 
+export interface FileUploadState {
+  isUploading: boolean;
+  uploadProgress: number;
+  isDragOver: boolean;
+  selectedFileType: 'lloyds' | 'stripe' | null;
+  error: string | null;
+  success: string | null;
+}
+
+export interface UploadResponse {
+  success: boolean;
+  data?: any[];
+  errors?: string[];
+  processed?: number;
+  skipped?: number;
+  message?: string;
+}
+
 export interface PaymentData {
   transactionFingerprint: string;
   amount: number;

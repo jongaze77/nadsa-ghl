@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { ReconciliationService } from '@/lib/ReconciliationService';
 import { prisma } from '@/lib/prisma';
 import type { ParsedPaymentData } from '@/lib/CsvParsingService';
-import { Decimal } from '@prisma/client/runtime/library';
 
 export const dynamic = 'force-dynamic';
 export const runtime = "nodejs";
+
+/**
+ * Helper function to get user by username
+ */
+async function getUserByUsername(username: string) {
+  return await prisma.user.findUnique({
+    where: { username },
+  });
+}
 
 interface ConfirmRequest {
   paymentData: ParsedPaymentData;
@@ -19,6 +28,9 @@ interface ConfirmResponse {
   success: boolean;
   reconciliationLogId?: string;
   message?: string;
+  ghlUpdateResult?: any;
+  wordpressUpdateResult?: any;
+  errors?: string[];
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<ConfirmResponse>> {
@@ -89,108 +101,58 @@ export async function POST(req: NextRequest): Promise<NextResponse<ConfirmRespon
     }
 
     try {
-      // Start database transaction
-      const result = await prisma.$transaction(async (tx) => {
-        // Check if transaction already exists
-        const existingReconciliation = await tx.reconciliationLog.findUnique({
-          where: { transactionFingerprint: paymentData.transactionFingerprint },
-        });
-
-        if (existingReconciliation) {
-          throw new Error('Transaction has already been reconciled');
-        }
-
-        // Verify contact exists
-        const contact = await tx.contact.findUnique({
-          where: { id: contactId },
-        });
-
-        if (!contact) {
-          throw new Error('Contact not found');
-        }
-
-        // Get user ID from session
-        const user = await tx.user.findUnique({
-          where: { username: session.user.name || '' },
-        });
-
-        if (!user) {
-          throw new Error('User not found');
-        }
-
-        // Create reconciliation log entry
-        const reconciliationLog = await tx.reconciliationLog.create({
-          data: {
-            transactionFingerprint: paymentData.transactionFingerprint,
-            paymentDate: paymentDate,
-            amount: new Decimal(paymentData.amount),
-            source: paymentData.source || 'BANK_CSV',
-            transactionRef: paymentData.transactionRef || paymentData.transactionFingerprint,
-            reconciledByUserId: user.id,
-            contactId: contactId,
-            metadata: {
-              confidence: confidence,
-              reasoning: reasoning,
-              description: paymentData.description,
-              hashedAccountIdentifier: paymentData.hashedAccountIdentifier,
-              reconciledAt: new Date().toISOString(),
-            },
-          },
-        });
-
-        // Create or update payment source if hashedAccountIdentifier exists
-        if (paymentData.hashedAccountIdentifier) {
-          await tx.paymentSource.upsert({
-            where: { hashedIdentifier: paymentData.hashedAccountIdentifier },
-            update: {
-              contactId: contactId,
-            },
-            create: {
-              hashedIdentifier: paymentData.hashedAccountIdentifier,
-              sourceType: paymentData.source === 'STRIPE_REPORT' ? 'stripe_source' : 'bank_account',
-              contactId: contactId,
-            },
-          });
-        }
-
-        return reconciliationLog;
-      });
-
-      // TODO: In future story, integrate with ReconciliationService for GHL/WordPress updates
-      // This will be implemented in Story 1.8: GHL and WordPress update services
-
-      return NextResponse.json({
-        success: true,
-        reconciliationLogId: result.id,
-        message: 'Match confirmed and reconciliation logged successfully',
-      });
-
-    } catch (dbError) {
-      console.error('Database transaction error:', dbError);
+      // Get user ID from session
+      const user = session.user?.name ? await getUserByUsername(session.user.name) : null;
       
-      if (dbError instanceof Error) {
-        if (dbError.message.includes('already been reconciled')) {
-          return NextResponse.json(
-            { success: false, message: 'This transaction has already been reconciled' },
-            { status: 409 }
-          );
-        }
-        if (dbError.message.includes('Contact not found')) {
-          return NextResponse.json(
-            { success: false, message: 'Contact not found' },
-            { status: 404 }
-          );
-        }
-        if (dbError.message.includes('User not found')) {
-          return NextResponse.json(
-            { success: false, message: 'User session invalid' },
-            { status: 401 }
-          );
-        }
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: 'User session invalid' },
+          { status: 401 }
+        );
       }
 
+      // Create reconciliation service instance
+      const reconciliationService = new ReconciliationService();
+
+      console.log(`[Confirm API] Starting reconciliation for contact ${contactId}`);
+
+      // Use ReconciliationService to handle the complete reconciliation
+      const result = await reconciliationService.confirmMatch({
+        paymentData,
+        contactId,
+        confidence,
+        reasoning,
+        reconciledByUserId: user.id,
+      });
+
+      if (result.success) {
+        console.log(`[Confirm API] Reconciliation completed successfully`);
+        return NextResponse.json({
+          success: true,
+          reconciliationLogId: result.reconciliationLogId,
+          message: 'Match confirmed and reconciliation completed successfully',
+          ghlUpdateResult: result.ghlUpdateResult,
+          wordpressUpdateResult: result.wordpressUpdateResult,
+          errors: result.errors,
+        });
+      } else {
+        console.error(`[Confirm API] Reconciliation failed:`, result.errors);
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Reconciliation failed', 
+            errors: result.errors,
+            reconciliationLogId: result.reconciliationLogId,
+          },
+          { status: result.rollbackPerformed ? 500 : 422 }
+        );
+      }
+
+    } catch (reconciliationError) {
+      console.error('Reconciliation service error:', reconciliationError);
+      
       return NextResponse.json(
-        { success: false, message: 'Failed to confirm match' },
+        { success: false, message: 'Internal reconciliation service error' },
         { status: 500 }
       );
     }

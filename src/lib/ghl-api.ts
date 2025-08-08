@@ -99,6 +99,160 @@ export async function updateContactInGHL(contactId: string, data: Partial<Contac
   return response.json();
 }
 
+export interface MembershipUpdateData {
+  renewalDate: Date;
+  membershipStatus?: 'active' | 'expired' | 'pending';
+  paidTag?: boolean;
+  paymentAmount?: number;
+  paymentDate?: Date;
+}
+
+/**
+ * Update membership status with renewal date and tags
+ */
+export async function updateMembershipStatus(
+  contactId: string, 
+  updateData: MembershipUpdateData
+): Promise<any> {
+  const { renewalDate, membershipStatus = 'active', paidTag = true, paymentAmount, paymentDate } = updateData;
+  
+  console.log(`[GHL-API] Updating membership status for contact ${contactId}:`, {
+    renewalDate: renewalDate.toISOString().split('T')[0],
+    membershipStatus,
+    paidTag,
+    paymentAmount,
+    paymentDate: paymentDate?.toISOString().split('T')[0],
+  });
+
+  // Prepare custom fields update using the field IDs directly
+  const customFields: Record<string, string> = {
+    'cWMPNiNAfReHOumOhBB2': renewalDate.toISOString().split('T')[0], // renewal_date field ID
+  };
+
+  // Add payment date if provided
+  if (paymentDate) {
+    customFields['w52V1FONYrhH0LUqDjBs'] = paymentDate.toISOString().split('T')[0]; // membership_start_date field ID
+  }
+
+  // Prepare tags based on membership status
+  const tags: string[] = [];
+  if (paidTag) {
+    tags.push('Paid');
+  }
+  
+  if (membershipStatus === 'active') {
+    tags.push('Active Member');
+  } else if (membershipStatus === 'expired') {
+    tags.push('Expired Member');
+  } else if (membershipStatus === 'pending') {
+    tags.push('Pending Member');
+  }
+
+  // Add payment amount as a tag if provided (for audit trail)
+  if (paymentAmount) {
+    tags.push(`Payment-£${paymentAmount}`);
+  }
+
+  const updatePayload = {
+    customFields,
+    tags,
+  };
+
+  console.log(`[GHL-API] Sending update payload:`, updatePayload);
+
+  try {
+    const result = await updateContactInGHL(contactId, updatePayload);
+    console.log(`[GHL-API] Membership status update successful for contact ${contactId}`);
+    return result;
+  } catch (error) {
+    console.error(`[GHL-API] Membership status update failed for contact ${contactId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Add or remove specific tags from a contact
+ */
+export async function updateContactTags(
+  contactId: string, 
+  tagsToAdd: string[] = [], 
+  tagsToRemove: string[] = []
+): Promise<any> {
+  console.log(`[GHL-API] Updating tags for contact ${contactId}:`, {
+    add: tagsToAdd,
+    remove: tagsToRemove,
+  });
+
+  try {
+    // First, fetch current contact to get existing tags
+    const currentContact = await fetchContactFromGHL(contactId);
+    const currentTags = currentContact.tags || [];
+    
+    console.log(`[GHL-API] Current tags for contact ${contactId}:`, currentTags);
+
+    // Calculate new tag list
+    let newTags = [...currentTags];
+    
+    // Remove tags
+    tagsToRemove.forEach(tag => {
+      newTags = newTags.filter(t => t !== tag);
+    });
+    
+    // Add new tags (avoid duplicates)
+    tagsToAdd.forEach(tag => {
+      if (!newTags.includes(tag)) {
+        newTags.push(tag);
+      }
+    });
+
+    console.log(`[GHL-API] New tags for contact ${contactId}:`, newTags);
+
+    const updatePayload = { tags: newTags };
+    const result = await updateContactInGHL(contactId, updatePayload);
+    
+    console.log(`[GHL-API] Tag update successful for contact ${contactId}`);
+    return result;
+  } catch (error) {
+    console.error(`[GHL-API] Tag update failed for contact ${contactId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Health check for GHL API connectivity
+ */
+export async function checkGHLConnection(): Promise<{ connected: boolean; error?: string }> {
+  try {
+    const apiKey = getApiKey();
+    const locationId = getLocationId();
+    
+    if (!apiKey || !locationId) {
+      return { 
+        connected: false, 
+        error: 'Missing GHL API credentials (GHL_API_KEY or GHL_LOCATION_ID)' 
+      };
+    }
+
+    // Try a simple API call to check connectivity
+    const response = await fetchWithRetry(
+      `${GHL_API_BASE}/contacts?limit=1`,
+      { method: 'GET' }
+    );
+
+    await response.json(); // Response parsed but not used in health check
+    console.log(`[GHL-API] Health check successful, API responsive`);
+    
+    return { connected: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[GHL-API] Health check failed:`, error);
+    return { 
+      connected: false, 
+      error: `GHL API connection failed: ${errorMessage}` 
+    };
+  }
+}
+
 export async function fetchAllContactsFromGHL(page: number = 1, limit: number = 100): Promise<any> {
   const response = await fetchWithRetry(
     `${GHL_API_BASE}/contacts?page=${page}&limit=${limit}&include_custom_fields=true`,

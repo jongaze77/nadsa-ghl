@@ -113,7 +113,7 @@ export class MatchingService {
   private async getAvailableContacts(): Promise<Contact[]> {
     // Check cache validity
     if (this.contactsCache.length > 0 && Date.now() < this.cacheExpiry) {
-      return await this.filterReconciledContacts(this.contactsCache);
+      return this.contactsCache;
     }
 
     try {
@@ -122,7 +122,7 @@ export class MatchingService {
       this.contactsCache = dbContacts;
       this.cacheExpiry = Date.now() + this.CACHE_DURATION_MS;
 
-      return await this.filterReconciledContacts(this.contactsCache);
+      return this.contactsCache;
 
     } catch (error) {
       console.error('Error fetching contacts from database:', error);
@@ -132,7 +132,7 @@ export class MatchingService {
         const ghlContacts = ghlResponse.contacts || [];
         this.contactsCache = ghlContacts.map(mapGHLContactToPrisma).filter((contact: any) => contact.id);
         this.cacheExpiry = Date.now() + this.CACHE_DURATION_MS;
-        return await this.filterReconciledContacts(this.contactsCache);
+        return this.contactsCache;
       } catch (ghlError) {
         console.error('Error fetching contacts from GHL fallback:', ghlError);
         return [];
@@ -140,26 +140,6 @@ export class MatchingService {
     }
   }
 
-  private async filterReconciledContacts(contacts: Contact[]): Promise<Contact[]> {
-    // Get contacts with recent reconciliation records (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const reconciledContactIds = await prisma.reconciliationLog.findMany({
-      where: {
-        reconciledAt: {
-          gte: thirtyDaysAgo
-        }
-      },
-      select: {
-        contactId: true
-      }
-    });
-
-    const reconciledIds = new Set(reconciledContactIds.map(r => r.contactId));
-
-    return contacts.filter(contact => !reconciledIds.has(contact.id));
-  }
 
   private async generateMatchSuggestions(
     paymentData: ParsedPaymentData, 

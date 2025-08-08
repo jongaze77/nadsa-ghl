@@ -24,19 +24,31 @@ export interface EmailConfig {
 }
 
 export class EmailService {
-  private static config: EmailConfig = {
-    enabled: process.env.EMAIL_NOTIFICATIONS_ENABLED === 'true',
-    host: process.env.SMTP_HOST || 'localhost',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    username: process.env.SMTP_USERNAME || '',
-    password: process.env.SMTP_PASSWORD || '',
-    fromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@localhost',
-    fromName: process.env.EMAIL_FROM_NAME || 'Security System',
-    adminEmails: (process.env.ADMIN_EMAIL_ADDRESSES || '').split(',').filter(email => email.trim())
-  };
-
+  private static config: EmailConfig = EmailService.loadConfig();
   private static transporter: nodemailer.Transporter | null = null;
+
+  private static loadConfig(): EmailConfig {
+    return {
+      enabled: process.env.EMAIL_NOTIFICATIONS_ENABLED === 'true',
+      host: process.env.SMTP_HOST || 'localhost',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      username: process.env.SMTP_USERNAME || '',
+      password: process.env.SMTP_PASSWORD || '',
+      fromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@localhost',
+      fromName: process.env.EMAIL_FROM_NAME || 'Security System',
+      adminEmails: (process.env.ADMIN_EMAIL_ADDRESSES || '').split(',').map(email => email.trim()).filter(email => email)
+    };
+  }
+
+  // For testing purposes only - allows configuration reload
+  // This method enables test suites to override environment variables
+  // and refresh the static configuration during test execution
+  // Production code should never call this method
+  static _refreshConfigForTesting(): void {
+    this.config = this.loadConfig();
+    this.transporter = null; // Reset transporter to use new config
+  }
 
   private static getTransporter(): nodemailer.Transporter | null {
     if (!this.config.enabled || !this.config.host) {

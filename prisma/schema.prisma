@@ -23,6 +23,7 @@ model User {
   lockedUntil DateTime?
   
   securityEvents SecurityEvent[]
+  reconciliationLogs ReconciliationLog[]
 }
 
 model Contact {
@@ -50,6 +51,10 @@ model Contact {
   customFields  Json?    // Store all custom fields as JSON
   ghlUpdatedAt  DateTime?
   lastSyncedAt  DateTime @default(now())
+  
+  // Reconciliation relationships
+  paymentSources     PaymentSource[]
+  reconciliationLogs ReconciliationLog[]
 }
 
 model SecurityEvent {
@@ -70,4 +75,38 @@ model SecurityEvent {
   @@index([timestamp])
   @@index([ipAddress])
   @@index([eventType])
+}
+
+model PaymentSource {
+  id               String   @id @default(cuid())
+  hashedIdentifier String   @unique // Hashed bank account number or payment identifier
+  sourceType       String   // e.g., 'bank_account', 'stripe_source'
+  contactId        String   // Foreign key to Contact
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  contact Contact @relation(fields: [contactId], references: [id])
+  
+  @@index([contactId])
+}
+
+model ReconciliationLog {
+  id                    String   @id @default(cuid())
+  transactionFingerprint String  @unique // Unique identifier for duplicate detection
+  paymentDate           DateTime
+  amount                Decimal  @db.Money // Precise decimal for financial data
+  source                String   // e.g., 'lloyds_bank', 'stripe'
+  transactionRef        String   // Original transaction reference
+  reconciledAt          DateTime @default(now())
+  reconciledByUserId    Int      // Foreign key to User
+  contactId             String   // Foreign key to Contact
+  metadata              Json?    // Additional transaction context
+  
+  reconciledBy User    @relation(fields: [reconciledByUserId], references: [id])
+  contact      Contact @relation(fields: [contactId], references: [id])
+  
+  @@index([reconciledByUserId])
+  @@index([contactId])
+  @@index([reconciledAt])
+  @@index([paymentDate, amount]) // Composite index for matching queries
 }

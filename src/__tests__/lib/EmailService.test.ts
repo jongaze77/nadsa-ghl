@@ -1,3 +1,12 @@
+/**
+ * EmailService Test Suite
+ * 
+ * Testing Pattern for Services with Static Configuration:
+ * 1. Service has static config loaded at module initialization
+ * 2. Tests override environment variables in beforeEach()
+ * 3. Tests call Service._refreshConfigForTesting() to reload config
+ * 4. This pattern ensures test isolation without impacting production performance
+ */
 import { EmailService, EmailNotificationData } from '@/lib/EmailService';
 import nodemailer from 'nodemailer';
 
@@ -39,6 +48,9 @@ describe('EmailService', () => {
       EMAIL_FROM_NAME: 'Test System',
       ADMIN_EMAIL_ADDRESSES: 'admin1@example.com,admin2@example.com',
     };
+    
+    // Refresh EmailService configuration to use the new environment variables
+    EmailService._refreshConfigForTesting();
   });
 
   afterEach(() => {
@@ -105,6 +117,7 @@ describe('EmailService', () => {
 
     it('should return false when email is disabled', async () => {
       process.env.EMAIL_NOTIFICATIONS_ENABLED = 'false';
+      EmailService._refreshConfigForTesting();
 
       const result = await EmailService.sendSecurityNotification(mockNotificationData);
 
@@ -115,6 +128,7 @@ describe('EmailService', () => {
 
     it('should return false when no admin emails configured', async () => {
       process.env.ADMIN_EMAIL_ADDRESSES = '';
+      EmailService._refreshConfigForTesting();
       const dataWithNoTo = { ...mockNotificationData, to: [] };
 
       const result = await EmailService.sendSecurityNotification(dataWithNoTo);
@@ -202,6 +216,7 @@ describe('EmailService', () => {
 
     it('should return error when email service not configured', async () => {
       process.env.EMAIL_NOTIFICATIONS_ENABLED = 'false';
+      EmailService._refreshConfigForTesting();
 
       const result = await EmailService.testEmailConfiguration();
 
@@ -244,6 +259,7 @@ describe('EmailService', () => {
 
     it('should handle missing admin emails', () => {
       process.env.ADMIN_EMAIL_ADDRESSES = '';
+      EmailService._refreshConfigForTesting();
 
       const config = EmailService.getConfiguration();
 
@@ -252,6 +268,7 @@ describe('EmailService', () => {
 
     it('should filter out empty email addresses', () => {
       process.env.ADMIN_EMAIL_ADDRESSES = 'admin1@example.com, , admin2@example.com,';
+      EmailService._refreshConfigForTesting();
 
       const config = EmailService.getConfiguration();
 
@@ -360,6 +377,7 @@ describe('EmailService', () => {
     it('should create transporter without auth when no credentials provided', async () => {
       process.env.SMTP_USERNAME = '';
       process.env.SMTP_PASSWORD = '';
+      EmailService._refreshConfigForTesting();
       
       mockTransporter.sendMail.mockResolvedValue({ messageId: 'test' });
 

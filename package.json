@@ -11,6 +11,7 @@
     "test": "npm run type-check && npm run lint && jest",
     "test:unit": "jest",
     "sync-contacts": "ts-node src/scripts/sync-contacts.ts",
+    "list-ghl-fields": "ts-node src/scripts/list-ghl-custom-fields.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

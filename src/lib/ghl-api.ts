@@ -124,14 +124,72 @@ export async function updateMembershipStatus(
     paymentDate: paymentDate?.toISOString().split('T')[0],
   });
 
-  // Prepare custom fields update using the field IDs directly
-  const customFields: Record<string, string> = {
-    'cWMPNiNAfReHOumOhBB2': renewalDate.toISOString().split('T')[0], // renewal_date field ID
-  };
+  // First, fetch current contact to check existing field values
+  console.log(`[GHL-API] Fetching contact ${contactId} to check existing field values`);
+  const contactBeforeResponse = await fetchContactFromGHL(contactId);
+  const contactBefore = contactBeforeResponse.contact || contactBeforeResponse;
+  const customFieldsBefore = contactBefore.customField || contactBefore.customFields || [];
+  
+  // Find existing renewal date and payment date fields
+  const existingRenewalField = customFieldsBefore.find((f: any) => f.id === 'cWMPNiNAfReHOumOhBB2');
+  const existingPaymentDateField = customFieldsBefore.find((f: any) => f.id === 'XSEdoRxvFAJ6gh8p5Rdw');
+  
+  console.log(`[GHL-API] Existing field values:`, {
+    renewalDate: existingRenewalField?.value || 'not set',
+    paymentDate: existingPaymentDateField?.value || 'not set'
+  });
 
-  // Add payment date if provided
+  // Prepare custom fields update with conditional logic
+  const customFields: Record<string, string> = {};
+  
+  // Renewal Date Logic:
+  // - If cWMPNiNAfReHOumOhBB2 is empty, insert the new date
+  // - If existing date is more recent than new date, do not update
+  // - Otherwise, update to the new date
+  const newRenewalDateStr = renewalDate.toISOString().split('T')[0];
+  let shouldUpdateRenewalDate = false;
+  
+  if (!existingRenewalField?.value) {
+    console.log(`[GHL-API] Renewal date is empty, will insert: ${newRenewalDateStr}`);
+    shouldUpdateRenewalDate = true;
+  } else {
+    const existingRenewalDate = new Date(existingRenewalField.value);
+    if (renewalDate > existingRenewalDate) {
+      console.log(`[GHL-API] New renewal date (${newRenewalDateStr}) is later than existing (${existingRenewalField.value}), will update`);
+      shouldUpdateRenewalDate = true;
+    } else {
+      console.log(`[GHL-API] Existing renewal date (${existingRenewalField.value}) is same or more recent than new date (${newRenewalDateStr}), will not update`);
+    }
+  }
+  
+  if (shouldUpdateRenewalDate) {
+    customFields['cWMPNiNAfReHOumOhBB2'] = newRenewalDateStr;
+  }
+
+  // Payment Date Logic:
+  // - If XSEdoRxvFAJ6gh8p5Rdw is empty, save the date
+  // - If existing date is older than new date, update to new date
+  // - If existing date is more recent than new date, don't update
   if (paymentDate) {
-    customFields['w52V1FONYrhH0LUqDjBs'] = paymentDate.toISOString().split('T')[0]; // membership_start_date field ID
+    const newPaymentDateStr = paymentDate.toISOString().split('T')[0];
+    let shouldUpdatePaymentDate = false;
+    
+    if (!existingPaymentDateField?.value) {
+      console.log(`[GHL-API] Payment date is empty, will insert: ${newPaymentDateStr}`);
+      shouldUpdatePaymentDate = true;
+    } else {
+      const existingPaymentDate = new Date(existingPaymentDateField.value);
+      if (paymentDate > existingPaymentDate) {
+        console.log(`[GHL-API] New payment date (${newPaymentDateStr}) is later than existing (${existingPaymentDateField.value}), will update`);
+        shouldUpdatePaymentDate = true;
+      } else {
+        console.log(`[GHL-API] Existing payment date (${existingPaymentDateField.value}) is same or more recent than new date (${newPaymentDateStr}), will not update`);
+      }
+    }
+    
+    if (shouldUpdatePaymentDate) {
+      customFields['XSEdoRxvFAJ6gh8p5Rdw'] = newPaymentDateStr;
+    }
   }
 
   // Prepare tags based on membership status
@@ -158,10 +216,50 @@ export async function updateMembershipStatus(
     tags,
   };
 
-  console.log(`[GHL-API] Sending update payload:`, updatePayload);
+  console.log(`[GHL-API] Sending update payload:`, JSON.stringify(updatePayload, null, 2));
 
   try {
+
     const result = await updateContactInGHL(contactId, updatePayload);
+    console.log(`[GHL-API] Update result:`, JSON.stringify(result, null, 2));
+    
+    // Fetch contact after update to verify
+    console.log(`[GHL-API] Fetching contact ${contactId} after update to verify changes`);
+    const contactAfterResponse = await fetchContactFromGHL(contactId);
+    const contactAfter = contactAfterResponse.contact || contactAfterResponse;
+    const customFieldsAfter = contactAfter.customField || contactAfter.customFields || [];
+    const renewalFieldAfter = customFieldsAfter.find?.((f: any) => f.id === 'cWMPNiNAfReHOumOhBB2');
+    const paymentDateFieldAfter = customFieldsAfter.find?.((f: any) => f.id === 'XSEdoRxvFAJ6gh8p5Rdw');
+    
+    console.log(`[GHL-API] Contact after update - renewal date field:`, {
+      customFieldsCount: customFieldsAfter.length,
+      renewalDateField: renewalFieldAfter,
+      paymentDateField: paymentDateFieldAfter,
+      allCustomFields: customFieldsAfter.map((f: any) => ({ id: f.id, value: f.value }))
+    });
+    
+    // Compare before and after to see if the update worked
+    const renewalFieldBeforeForComparison = existingRenewalField;
+    const paymentDateFieldBeforeForComparison = existingPaymentDateField;
+    
+    const renewalDateChanged = renewalFieldBeforeForComparison?.value !== renewalFieldAfter?.value;
+    const paymentDateChanged = paymentDateFieldBeforeForComparison?.value !== paymentDateFieldAfter?.value;
+    
+    console.log(`[GHL-API] Field update verification:`, {
+      renewalDate: {
+        beforeValue: renewalFieldBeforeForComparison?.value || 'not set',
+        afterValue: renewalFieldAfter?.value || 'not set', 
+        changed: renewalDateChanged,
+        expectedValue: renewalDate.toISOString().split('T')[0]
+      },
+      paymentDate: {
+        beforeValue: paymentDateFieldBeforeForComparison?.value || 'not set',
+        afterValue: paymentDateFieldAfter?.value || 'not set',
+        changed: paymentDateChanged,
+        expectedValue: paymentDate?.toISOString().split('T')[0] || 'not provided'
+      }
+    });
+    
     console.log(`[GHL-API] Membership status update successful for contact ${contactId}`);
     return result;
   } catch (error) {

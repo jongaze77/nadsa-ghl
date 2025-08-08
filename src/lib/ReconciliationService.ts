@@ -273,13 +273,14 @@ export class ReconciliationService {
     const membershipValidation = this.validateMembershipPayment(currentContact, paymentData);
     console.log(`[ReconciliationService] Membership validation:`, membershipValidation);
     
-    // Step 3: Calculate smart renewal date (never go backwards)
-    const smartRenewalDate = this.calculateSmartRenewalDate(paymentData.paymentDate, currentContact.renewalDate);
-    console.log(`[ReconciliationService] Smart renewal date: ${smartRenewalDate.toISOString().split('T')[0]}`);
+    // Step 3: Calculate new renewal date (payment date + 1 year)
+    const newRenewalDate = new Date(paymentData.paymentDate);
+    newRenewalDate.setFullYear(newRenewalDate.getFullYear() + 1);
+    console.log(`[ReconciliationService] Calculated renewal date: ${newRenewalDate.toISOString().split('T')[0]} (payment date + 1 year)`);
     
     // Step 4: Update membership status and renewal date
     const membershipUpdateData: GHLMembershipUpdateData = {
-      renewalDate: smartRenewalDate,
+      renewalDate: newRenewalDate,
       membershipStatus: 'active',
       paidTag: true,
       paymentAmount: paymentData.amount,
@@ -294,13 +295,13 @@ export class ReconciliationService {
     );
     
     // Step 5: Add reconciliation note to GHL contact
-    const noteResult = await this.addReconciliationNote(contactId, paymentData, membershipValidation, smartRenewalDate);
+    const noteResult = await this.addReconciliationNote(contactId, paymentData, membershipValidation, newRenewalDate);
     
     return {
       membershipUpdate: membershipUpdateResult,
       noteAdded: noteResult,
       membershipValidation,
-      renewalDate: smartRenewalDate
+      renewalDate: newRenewalDate
     };
   }
 
@@ -469,22 +470,42 @@ export class ReconciliationService {
   }> {
     try {
       const { fetchContactFromGHL } = await import('./ghl-api');
-      const ghlContact = await fetchContactFromGHL(contactId);
+      const ghlContactResponse = await fetchContactFromGHL(contactId);
+      
+      // Handle nested contact structure from GHL API response
+      const ghlContact = ghlContactResponse.contact || ghlContactResponse;
+      
+      console.log(`[ReconciliationService] Raw GHL contact data for ${contactId}:`, {
+        responseStructure: Object.keys(ghlContactResponse),
+        contactId: ghlContact.id,
+        firstName: ghlContact.firstName,
+        lastName: ghlContact.lastName,
+        email: ghlContact.email,
+        customFields: ghlContact.customFields,
+        customField: ghlContact.customField, // GHL uses singular 'customField'
+        hasContact: !!ghlContactResponse.contact
+      });
+      
+      // GHL API returns customField (singular) as an array, not customFields (plural)
+      const customFieldsData = ghlContact.customField || ghlContact.customFields || [];
       
       // Extract current renewal date from custom fields
       let currentRenewalDate: Date | null = null;
       const renewalDateFieldId = 'cWMPNiNAfReHOumOhBB2'; // renewal_date field ID
       
-      if (ghlContact.customFields) {
-        const renewalField = Array.isArray(ghlContact.customFields)
-          ? ghlContact.customFields.find((f: any) => f.id === renewalDateFieldId)
-          : ghlContact.customFields[renewalDateFieldId];
+      if (customFieldsData && customFieldsData.length > 0) {
+        const renewalField = customFieldsData.find((f: any) => f.id === renewalDateFieldId);
           
-        if (renewalField) {
-          const dateValue = typeof renewalField === 'object' ? renewalField.value : renewalField;
-          if (dateValue) {
-            currentRenewalDate = new Date(dateValue);
-          }
+        console.log(`[ReconciliationService] Renewal date field extraction for ${contactId}:`, {
+          renewalField,
+          fieldId: renewalDateFieldId,
+          customFieldsCount: customFieldsData.length,
+          allFields: customFieldsData.map((f: any) => ({ id: f.id, value: f.value }))
+        });
+          
+        if (renewalField && renewalField.value) {
+          currentRenewalDate = new Date(renewalField.value);
+          console.log(`[ReconciliationService] Parsed renewal date for ${contactId}: ${currentRenewalDate.toISOString().split('T')[0]}`);
         }
       }
       
@@ -492,23 +513,32 @@ export class ReconciliationService {
       const membershipTypeFieldId = 'gH97LlNC9Y4PlkKVlY8V';
       let membershipType: string | null = null;
       
-      if (ghlContact.customFields) {
-        const membershipField = Array.isArray(ghlContact.customFields)
-          ? ghlContact.customFields.find((f: any) => f.id === membershipTypeFieldId)
-          : ghlContact.customFields[membershipTypeFieldId];
+      if (customFieldsData && customFieldsData.length > 0) {
+        const membershipField = customFieldsData.find((f: any) => f.id === membershipTypeFieldId);
           
-        if (membershipField) {
-          membershipType = typeof membershipField === 'object' ? membershipField.value : membershipField;
+        console.log(`[ReconciliationService] Membership type field extraction for ${contactId}:`, {
+          membershipField,
+          fieldId: membershipTypeFieldId,
+          customFieldsCount: customFieldsData.length
+        });
+          
+        if (membershipField && membershipField.value) {
+          membershipType = membershipField.value;
+          console.log(`[ReconciliationService] Extracted membership type for ${contactId}: "${membershipType}"`);
         }
       }
       
-      return {
+      const result = {
         membershipType: membershipType?.trim() || null,
         renewalDate: currentRenewalDate,
         firstName: ghlContact.firstName || null,
         lastName: ghlContact.lastName || null,
         email: ghlContact.email || null
       };
+      
+      console.log(`[ReconciliationService] Final contact details for ${contactId}:`, result);
+      
+      return result;
     } catch (error) {
       console.error(`[ReconciliationService] Failed to fetch contact details for ${contactId}:`, error);
       return {
@@ -631,6 +661,10 @@ export class ReconciliationService {
     try {
       console.log(`[ReconciliationService] Adding reconciliation note to contact ${contactId}`);
       
+      // Fetch current contact details for proper name display
+      const contactDetails = await this.fetchContactDetails(contactId);
+      const displayName = this.getContactDisplayName(contactDetails);
+      
       const paymentDateStr = new Date(paymentData.paymentDate).toLocaleDateString('en-GB');
       const renewalDateStr = renewalDate.toLocaleDateString('en-GB');
       const timestamp = new Date().toLocaleString('en-GB');
@@ -638,9 +672,10 @@ export class ReconciliationService {
       let noteText = `🔄 Payment Reconciliation - ${timestamp}\n`;
       noteText += `💳 Payment: £${paymentData.amount} on ${paymentDateStr}\n`;
       noteText += `📝 Reference: ${paymentData.transactionRef || paymentData.transactionFingerprint}\n`;
+      noteText += `👤 Contact: ${displayName}\n`;
       
       if (paymentData.customer_name) {
-        noteText += `👤 Customer Name: ${paymentData.customer_name}\n`;
+        noteText += `💳 Customer Name: ${paymentData.customer_name}\n`;
       }
       if (paymentData.customer_email) {
         noteText += `📧 Customer Email: ${paymentData.customer_email}\n`;
@@ -685,6 +720,30 @@ export class ReconciliationService {
     } catch (error) {
       console.error(`[ReconciliationService] Failed to add note to contact ${contactId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Get a proper display name for a contact, handling null values
+   */
+  private getContactDisplayName(contactDetails: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  }): string {
+    const { firstName, lastName, email } = contactDetails;
+    
+    // Try to build name from first/last name
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else if (email) {
+      return email;
+    } else {
+      return 'Unknown Contact';
     }
   }
 

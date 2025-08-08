@@ -553,11 +553,11 @@ export class ReconciliationService {
     warning?: string;
   } {
     const membershipFees = {
-      'Full': { min: 60, max: 80, typical: 70 },
-      'Associate': { min: 40, max: 60, typical: 50 },
-      'Single': { min: 60, max: 80, typical: 70 }, // Same as Full
-      'Double': { min: 60, max: 80, typical: 70 }, // Same as Full
-      'Newsletter Only': { min: 10, max: 20, typical: 15 },
+      'Full': { min: 19, max: 31, typical: 30 },
+      'Associate': { min: 5, max: 15, typical: 10 },
+      'Single': { min: 15, max: 25, typical: 20 }, // Same as Full
+      'Double': { min: 25, max: 35, typical: 30 }, // Same as Full
+      'Newsletter Only': { min: 0, max: 5, typical: 5 },
       'None': { min: 10, max: 80, typical: 30 } // Wide range for upgrading members
     };
     

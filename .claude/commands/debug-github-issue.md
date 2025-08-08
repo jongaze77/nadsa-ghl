@@ -21,9 +21,10 @@ This hybrid command merges the systematic debugging approach from `debug-issue.m
 1. **Fetch issue details**: `gh issue view [issue-number]`
 2. **Validate issue exists** and is open
 3. **Check for existing debug session** in issue comments
-4. **Post initial debug comment** to claim the issue
-5. **Create debug branch**: `debug/issue-${issue-number}-YYYY-MM-DD`
-6. **Safety checks**: Ensure clean working directory
+4. **Preserve current work**: Create safety stash or commit before any destructive operations
+5. **Post initial debug comment** to claim the issue
+6. **Create debug branch**: `debug/issue-${issue-number}-YYYY-MM-DD`
+7. **Safety checks**: Ensure clean working directory (after preservation)
 
 ### Phase 1: Investigation Planning
 - **Analyze issue description** and reproduction steps
@@ -65,6 +66,7 @@ When issue is resolved:
 **Debug Branch**: `debug/issue-{issue-number}-YYYY-MM-DD`
 **Started**: {timestamp}
 **Session ID**: `DEBUG-{issue-number}-{session-counter}`
+**Work Preservation**: Previous work committed/stashed before session start
 
 ## Investigation Plan
 - [ ] {planned step 1}
@@ -179,19 +181,28 @@ gh issue view $ISSUE_NUMBER
 # 2. Check for existing debug session
 gh issue view $ISSUE_NUMBER --comments | grep "🔍 **Debug Session Started**"
 
-# 3. Create debug branch if not exists  
+# 3. Preserve current work before any destructive operations
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Preserving current work..."
+  git add .
+  git commit -m "WIP: Preserving work before debug session for issue #$ISSUE_NUMBER" || \
+  git stash push -m "Debug session preservation for issue #$ISSUE_NUMBER - $(date)"
+  echo "Work preserved. Can be restored with 'git stash pop' or by checking commit history."
+fi
+
+# 4. Create debug branch if not exists  
 git checkout -b debug/issue-$ISSUE_NUMBER-$(date +%Y-%m-%d)
 
-# 4. Post initial comment
+# 5. Post initial comment
 gh issue comment $ISSUE_NUMBER --body "$INITIAL_DEBUG_COMMENT"
 
-# 5. Begin systematic debugging loop
+# 6. Begin systematic debugging loop
 # ... (investigation and attempts)
 
-# 6. Monitor circuit breaker via comment analysis
+# 7. Monitor circuit breaker via comment analysis
 # ... (count attempts, detect patterns)
 
-# 7. Escalate or resolve based on results
+# 8. Escalate or resolve based on results
 ```
 
 ## Circuit Breaker Logic
@@ -244,6 +255,14 @@ If local session is interrupted:
 2. **Checkout debug branch** to continue work
 3. **Resume from last attempt** based on comment history
 4. **Maintain attempt numbering** across interruptions
+
+### Work Preservation
+Before starting any debug session:
+1. **Check for uncommitted changes** with `git status --porcelain`
+2. **Create preservation commit** if changes are ready: `git add . && git commit -m "WIP: ..."`
+3. **Create named stash** if changes are incomplete: `git stash push -m "Debug preservation for #issue..."`
+4. **Log preservation method** in initial debug comment for reference
+5. **Provide recovery instructions** in case of interruption
 
 ### Comment Backup
 - **Local cache**: Store comment drafts before posting

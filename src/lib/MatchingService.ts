@@ -23,6 +23,11 @@ export interface MatchSuggestion {
       expectedRange: string;
       actualAmount: number;
     };
+    postcodeMatch?: {
+      score: number;
+      providedPostcode: string;
+      contactPostcode: string;
+    };
   };
 }
 
@@ -44,9 +49,10 @@ export class MatchingService {
   private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   private readonly MIN_CONFIDENCE_THRESHOLD = 0.3;
   private readonly MAX_SUGGESTIONS = 5;
-  private readonly NAME_WEIGHT = 0.4;
-  private readonly EMAIL_WEIGHT = 0.4;
-  private readonly AMOUNT_WEIGHT = 0.2;
+  private readonly NAME_WEIGHT = 0.35;
+  private readonly EMAIL_WEIGHT = 0.25;
+  private readonly POSTCODE_WEIGHT = 0.25;
+  private readonly AMOUNT_WEIGHT = 0.15;
 
   private readonly membershipFees: Record<string, MembershipFeeRange> = {
     'Full': { min: 60, max: 80 },
@@ -166,10 +172,12 @@ export class MatchingService {
       const nameMatch = this.calculateNameMatch(paymentData, contact);
       const amountMatch = this.calculateAmountMatch(paymentData.amount, contact.membershipType);
       const emailMatch = this.calculateEmailMatch(paymentData, contact);
+      const postcodeMatch = this.calculatePostcodeMatch(paymentData, contact);
 
-      // Calculate combined confidence score with email matching
+      // Calculate combined confidence score including postcode matching
       const confidence = (nameMatch.score * this.NAME_WEIGHT) + 
                         (emailMatch.score * this.EMAIL_WEIGHT) + 
+                        (postcodeMatch.score * this.POSTCODE_WEIGHT) +
                         (amountMatch.score * this.AMOUNT_WEIGHT);
 
       if (confidence > 0) {
@@ -180,6 +188,7 @@ export class MatchingService {
           reasoning: {
             nameMatch,
             emailMatch: emailMatch.score > 0 ? emailMatch : undefined,
+            postcodeMatch: postcodeMatch.score > 0 ? postcodeMatch : undefined,
             amountMatch
           }
         });
@@ -222,21 +231,89 @@ export class MatchingService {
   }
   
   private matchSingleName(providedName: string, contact: Contact) {
-    const contactNames = this.getContactNames(contact);
-    let bestScore = 0;
-    let bestMatched = '';
-    
     const cleanProvidedName = providedName.toUpperCase().trim();
     
-    for (const contactName of contactNames) {
-      const score = this.calculateLevenshteinSimilarity(cleanProvidedName, contactName);
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatched = contactName;
+    // Extract surname (last word or hyphenated word) from provided name
+    const nameWords = cleanProvidedName.split(/\s+/);
+    const providedSurname = nameWords[nameWords.length - 1];
+    
+    // Check for hyphenated surnames
+    const hyphenatedParts = providedSurname.split('-');
+    const possibleSurnames = [providedSurname, ...hyphenatedParts];
+    
+    // Check if contact's surname matches any of the possible surnames
+    const contactSurname = contact.lastName?.toUpperCase().trim();
+    if (!contactSurname) {
+      return { score: 0, matchedAgainst: '' };
+    }
+    
+    let surnameMatch = false;
+    for (const surname of possibleSurnames) {
+      if (contactSurname === surname) {
+        surnameMatch = true;
+        break;
       }
     }
     
-    return { score: bestScore, matchedAgainst: bestMatched };
+    if (!surnameMatch) {
+      // No surname match, very low score
+      return { score: 0.1, matchedAgainst: contactSurname };
+    }
+    
+    // Surname matches, now check forename
+    const providedForename = nameWords.slice(0, -1).join(' ');
+    const contactForename = contact.firstName?.toUpperCase().trim();
+    
+    if (!contactForename || !providedForename) {
+      // Surname match only
+      return { score: 0.6, matchedAgainst: `${contactForename || ''} ${contactSurname}`.trim() };
+    }
+    
+    // Check for exact forename match
+    if (providedForename === contactForename) {
+      return { score: 1.0, matchedAgainst: `${contactForename} ${contactSurname}` };
+    }
+    
+    // Check if contact forename could be a reasonable abbreviation of provided forename
+    if (this.isReasonableAbbreviation(providedForename, contactForename)) {
+      return { score: 0.9, matchedAgainst: `${contactForename} ${contactSurname}` };
+    }
+    
+    // Check if provided forename could be a reasonable abbreviation of contact forename
+    if (this.isReasonableAbbreviation(contactForename, providedForename)) {
+      return { score: 0.9, matchedAgainst: `${contactForename} ${contactSurname}` };
+    }
+    
+    // Check for similar forenames using Levenshtein
+    const forenameScore = this.calculateLevenshteinSimilarity(providedForename, contactForename);
+    if (forenameScore > 0.7) {
+      return { score: forenameScore * 0.8, matchedAgainst: `${contactForename} ${contactSurname}` };
+    }
+    
+    // Surname match but different forename
+    return { score: 0.3, matchedAgainst: `${contactForename} ${contactSurname}` };
+  }
+  
+  private isReasonableAbbreviation(fullName: string, abbreviation: string): boolean {
+    // Check if abbreviation is reasonable for the full name
+    if (abbreviation.length > fullName.length) return false;
+    
+    // Single letter abbreviation
+    if (abbreviation.length === 1) {
+      return fullName.startsWith(abbreviation);
+    }
+    
+    // Multi-letter abbreviation - should be prefix of full name
+    if (abbreviation.length <= 5 && fullName.startsWith(abbreviation)) {
+      return true;
+    }
+    
+    // For longer abbreviations, use more lenient matching
+    if (abbreviation.length > 5) {
+      return fullName.startsWith(abbreviation) && abbreviation.length >= fullName.length * 0.5;
+    }
+    
+    return false;
   }
   
   private matchFromDescription(description: string, contact: Contact) {
@@ -251,26 +328,17 @@ export class MatchingService {
       return { score: 0, extractedName: '', matchedAgainst: '' };
     }
 
-    // Get contact names for matching
-    const contactNames = this.getContactNames(contact);
-    
-    if (contactNames.length === 0) {
-      return { score: 0, extractedName: '', matchedAgainst: '' };
-    }
-
     let bestScore = 0;
     let bestExtracted = '';
     let bestMatched = '';
 
-    // Compare each extracted name against each contact name
+    // Test each extracted name using the same surname-first logic
     for (const extractedName of extractedNames) {
-      for (const contactName of contactNames) {
-        const score = this.calculateLevenshteinSimilarity(extractedName, contactName);
-        if (score > bestScore) {
-          bestScore = score;
-          bestExtracted = extractedName;
-          bestMatched = contactName;
-        }
+      const nameResult = this.matchSingleName(extractedName, contact);
+      if (nameResult.score > bestScore) {
+        bestScore = nameResult.score;
+        bestExtracted = extractedName;
+        bestMatched = nameResult.matchedAgainst;
       }
     }
 
@@ -316,37 +384,6 @@ export class MatchingService {
     return [...new Set(names)];
   }
 
-  private getContactNames(contact: Contact): string[] {
-    const names: string[] = [];
-
-    // Full name
-    if (contact.name) {
-      names.push(contact.name.toUpperCase());
-    }
-
-    // First + Last name
-    if (contact.firstName && contact.lastName) {
-      names.push(`${contact.firstName} ${contact.lastName}`.toUpperCase());
-      names.push(`${contact.lastName} ${contact.firstName}`.toUpperCase());
-    }
-
-    // Individual names
-    if (contact.firstName) {
-      names.push(contact.firstName.toUpperCase());
-    }
-    if (contact.lastName) {
-      names.push(contact.lastName.toUpperCase());
-    }
-
-    // Handle initials
-    if (contact.firstName && contact.lastName) {
-      names.push(`${contact.firstName[0]} ${contact.lastName}`.toUpperCase());
-      names.push(`${contact.firstName} ${contact.lastName[0]}`.toUpperCase());
-    }
-
-    return [...new Set(names)].filter(name => name.trim().length > 0);
-  }
-  
   private calculateEmailMatch(paymentData: ParsedPaymentData, contact: Contact) {
     // If no customer email provided, return 0 score
     if (!paymentData.customer_email) {
@@ -384,6 +421,58 @@ export class MatchingService {
     }
     
     return { score: 0, providedEmail: paymentData.customer_email, contactEmail: contact.email };
+  }
+
+  private calculatePostcodeMatch(paymentData: ParsedPaymentData, contact: Contact) {
+    // Check if we have postcode data from payment (Stripe billing address or other source)
+    const providedPostcode = paymentData.card_address_postal_code || null;
+    
+    if (!providedPostcode) {
+      return { score: 0, providedPostcode: '', contactPostcode: contact.postalCode || '' };
+    }
+    
+    // Check if contact has postcode
+    if (!contact.postalCode) {
+      return { score: 0, providedPostcode, contactPostcode: '' };
+    }
+    
+    const normalizedProvided = this.normalizePostcode(providedPostcode);
+    const normalizedContact = this.normalizePostcode(contact.postalCode);
+    
+    // Exact match gets full score
+    if (normalizedProvided === normalizedContact) {
+      return { score: 1.0, providedPostcode, contactPostcode: contact.postalCode };
+    }
+    
+    // UK postcodes: check if the outward code matches (e.g., "TQ12" from "TQ12 3LY")
+    const providedOutward = normalizedProvided.split(' ')[0];
+    const contactOutward = normalizedContact.split(' ')[0];
+    
+    if (providedOutward && contactOutward && providedOutward === contactOutward) {
+      return { score: 0.8, providedPostcode, contactPostcode: contact.postalCode };
+    }
+    
+    // Check if the district matches (e.g., "TQ" from "TQ12")
+    const providedDistrict = providedOutward?.substring(0, providedOutward.length - 1);
+    const contactDistrict = contactOutward?.substring(0, contactOutward.length - 1);
+    
+    if (providedDistrict && contactDistrict && providedDistrict === contactDistrict && providedDistrict.length >= 2) {
+      return { score: 0.5, providedPostcode, contactPostcode: contact.postalCode };
+    }
+    
+    // Check if the area matches (first letter(s), e.g., "TQ" from "TQ12")
+    const providedArea = providedOutward?.substring(0, 2);
+    const contactArea = contactOutward?.substring(0, 2);
+    
+    if (providedArea && contactArea && providedArea === contactArea) {
+      return { score: 0.3, providedPostcode, contactPostcode: contact.postalCode };
+    }
+    
+    return { score: 0, providedPostcode, contactPostcode: contact.postalCode };
+  }
+
+  private normalizePostcode(postcode: string): string {
+    return postcode.toUpperCase().replace(/\s+/g, ' ').trim();
   }
 
   private calculateLevenshteinSimilarity(str1: string, str2: string): number {

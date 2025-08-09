@@ -211,23 +211,7 @@ export default function FullContactEditForm({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔵 Form submission triggered', { form, fieldErrors: Object.keys(fieldErrors) });
-    
-    if (!validateForm()) {
-      console.log('❌ Form validation failed', fieldErrors);
-      // Scroll to first error
-      const firstErrorField = Object.keys(fieldErrors)[0];
-      if (firstErrorField) {
-        const element = document.getElementById(firstErrorField);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.focus();
-        }
-      }
-      return;
-    }
-    
-    console.log('✅ Form validation passed, calling onSave');
+    console.log('🔵 Form submission triggered - calling onSave');
     onSave(buildPayload(form));
     setIsDirty(false);
   };
@@ -541,7 +525,7 @@ export default function FullContactEditForm({
           </button>
           <button
             type="submit"
-            disabled={saving || Object.keys(fieldErrors).length > 0}
+            disabled={saving}
             className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
             {saving ? (

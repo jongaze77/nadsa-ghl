@@ -53,6 +53,9 @@ model Contact {
   ghlUpdatedAt  DateTime?
   lastSyncedAt  DateTime @default(now())
   
+  // Extracted custom fields for easier querying
+  renewal_date  String?  // Extracted from GHL custom field cWMPNiNAfReHOumOhBB2
+  
   // Reconciliation relationships
   paymentSources     PaymentSource[]
   reconciliationLogs ReconciliationLog[]

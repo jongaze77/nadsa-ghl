@@ -450,9 +450,8 @@ export default function FullContactEditForm({
           {/* Notes Section */}
           <NotesSection contactId={contact.id} />
         </div>
-      </form>
 
-      {/* Action Buttons - Sticky Footer */}
+        {/* Action Buttons - Inside Form */}
       <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
         {/* Unsaved Changes Warning */}
         {showUnsavedWarning && (
@@ -550,6 +549,7 @@ export default function FullContactEditForm({
           </button>
         </div>
       </div>
+      </form>
     </div>
   );
 }

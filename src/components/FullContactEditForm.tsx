@@ -210,8 +210,10 @@ export default function FullContactEditForm({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔵 Form submission triggered', { form, fieldErrors: Object.keys(fieldErrors) });
     
     if (!validateForm()) {
+      console.log('❌ Form validation failed', fieldErrors);
       // Scroll to first error
       const firstErrorField = Object.keys(fieldErrors)[0];
       if (firstErrorField) {
@@ -224,6 +226,7 @@ export default function FullContactEditForm({
       return;
     }
     
+    console.log('✅ Form validation passed, calling onSave');
     onSave(buildPayload(form));
     setIsDirty(false);
   };

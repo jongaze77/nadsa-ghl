@@ -187,6 +187,7 @@ function EditContactModal({
   }, [contact.id]);
 
   const handleSave = async (payload: any) => {
+    console.log('🔵 handleSave called with payload:', payload);
     setSaving(true);
     setError(null);
     try {
@@ -195,11 +196,14 @@ function EditContactModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      console.log('🔵 API response:', response.status, response.ok);
       if (!response.ok) throw new Error('Failed to update contact');
       const updated = await response.json();
+      console.log('✅ Contact updated successfully:', updated);
       onSaved(updated);
       onClose();
     } catch (err) {
+      console.error('❌ Error in handleSave:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSaving(false);

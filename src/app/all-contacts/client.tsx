@@ -112,6 +112,51 @@ function getSortFn(column: string, direction: 'asc' | 'desc') {
   };
 }
 
+function getMembershipTypeDisplay(membershipType: string | null | undefined) {
+  if (!membershipType) return null;
+  
+  const type = membershipType.toLowerCase().trim();
+  
+  switch (type) {
+    case 'full':
+      return {
+        abbreviation: 'F',
+        label: 'Full',
+        className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+      };
+    case 'associate':
+      return {
+        abbreviation: 'A', 
+        label: 'Associate',
+        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+      };
+    case 'none':
+      return {
+        abbreviation: 'N',
+        label: 'None', 
+        className: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+      };
+    case 'newsletter only':
+      return {
+        abbreviation: 'NL',
+        label: 'Newsletter Only',
+        className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+      };
+    case 'ex member':
+      return {
+        abbreviation: 'EX',
+        label: 'Ex Member',
+        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+      };
+    default:
+      return {
+        abbreviation: type.substring(0, 2).toUpperCase(),
+        label: membershipType,
+        className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+      };
+  }
+}
+
 // EditContactModal component
 function EditContactModal({
   contact,
@@ -420,7 +465,7 @@ export default function ContactsClient() {
                     <th
                       key={col.key}
                       onClick={() => handleHeaderClick(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors select-none ${col.width}`}
+                      className={`px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors select-none ${col.width}`}
                     >
                       <div className="flex items-center space-x-1">
                         <span>{col.label}</span>
@@ -441,7 +486,7 @@ export default function ContactsClient() {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={COLUMNS.length} className="px-6 py-12 text-center">
+                    <td colSpan={COLUMNS.length} className="px-3 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
                         <p className="text-gray-500 dark:text-gray-400">Loading contacts...</p>
@@ -450,7 +495,7 @@ export default function ContactsClient() {
                   </tr>
                 ) : filteredContacts.length === 0 ? (
                   <tr>
-                    <td colSpan={COLUMNS.length} className="px-6 py-12 text-center">
+                    <td colSpan={COLUMNS.length} className="px-3 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                           <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,13 +536,13 @@ export default function ContactsClient() {
                         if (e.key === 'Enter') handleRowClick(contact, e as any);
                       }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium w-24" title={contact.lastName}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium w-24" title={contact.lastName}>
                         {truncate(contact.lastName)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-24" title={contact.firstName}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-24" title={contact.firstName}>
                         {truncate(contact.firstName)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-48" title={contact.email}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-48" title={contact.email}>
                         {contact.email ? (
                           <a 
                             href={`mailto:${contact.email}`} 
@@ -510,7 +555,7 @@ export default function ContactsClient() {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-28" title={contact.phone}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-28" title={contact.phone}>
                         {contact.phone ? (
                           <a 
                             href={`tel:${contact.phone}`} 
@@ -523,22 +568,25 @@ export default function ContactsClient() {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-44" title={contact.address1}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-44" title={contact.address1}>
                         {truncate(contact.address1) || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-20" title={contact.postalCode}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-20" title={contact.postalCode}>
                         {truncate(contact.postalCode) || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm w-24" title={contact.membershipType}>
-                        {contact.membershipType ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            {truncate(contact.membershipType)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
+                      <td className="px-3 py-4 whitespace-nowrap text-sm w-24" title={contact.membershipType}>
+                        {(() => {
+                          const membershipDisplay = getMembershipTypeDisplay(contact.membershipType);
+                          return membershipDisplay ? (
+                            <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-xs font-bold ${membershipDisplay.className}`} title={membershipDisplay.label}>
+                              {membershipDisplay.abbreviation}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          );
+                        })()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-28" title={contact.renewal_date}>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-28" title={contact.renewal_date}>
                         {contact.renewal_date ? truncate(contact.renewal_date) : <span className="text-gray-400">—</span>}
                       </td>
                     </tr>

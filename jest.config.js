@@ -26,6 +26,7 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
+    '<rootDir>/tests/playwright/', // Exclude Playwright tests from Jest
     '<rootDir>/src/__tests__/lib/auth-security-integration.test.ts', // Skip complex integration test
     '<rootDir>/src/__tests__/lib/prisma-reconciliation-models.test.ts', // Skip database tests - require real DB
     '<rootDir>/src/__tests__/api/', // Skip API tests - require Next.js runtime and complex dependency setup

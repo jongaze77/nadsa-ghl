@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { PersistedPaymentData, ContactMatch, MatchSuggestionsState, MatchesResponse, ConfirmResponse, PaymentData } from './types';
+import ManualContactSearch from './ManualContactSearch';
+import CreateContactForm from './CreateContactForm';
 
 interface MatchSuggestionsProps {
   selectedPayment: PersistedPaymentData | null;
@@ -17,6 +19,9 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
     confirmingMatch: null,
     processingTimeMs: undefined,
   });
+
+  const [activeTab, setActiveTab] = useState<'suggestions' | 'manual-search' | 'create-contact'>('suggestions');
+  const [manuallySelectedContact, setManuallySelectedContact] = useState<any>(null);
 
   // Fetch match suggestions for selected payment
   const fetchMatchSuggestions = async (payment: PersistedPaymentData) => {
@@ -79,7 +84,7 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
     }
   };
 
-  // Confirm a match
+  // Confirm a match (for AI suggestions or manual selections)
   const confirmMatch = async (match: ContactMatch) => {
     if (!state.selectedPayment) return;
 
@@ -126,6 +131,8 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
           confirmingMatch: null,
           suggestions: [], // Clear suggestions after successful confirmation
         }));
+        setManuallySelectedContact(null);
+        setActiveTab('suggestions');
 
         if (onMatchConfirmed) {
           onMatchConfirmed(state.selectedPayment, match);
@@ -141,6 +148,32 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
         error: error instanceof Error ? error.message : 'Failed to confirm match'
       }));
     }
+  };
+
+  // Handle manual contact selection
+  const handleManualContactSelected = (contact: any) => {
+    setManuallySelectedContact(contact);
+  };
+
+  // Handle contact creation
+  const handleContactCreated = (contact: any) => {
+    // After creating a contact, automatically create a match for it
+    const newContactMatch: ContactMatch = {
+      contactId: contact.id,
+      contact: {
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        membershipType: contact.membershipType,
+      },
+      confidence: 1.0, // New contact has 100% confidence
+      reasoning: {
+        newContact: { score: 1.0, details: 'Newly created contact' }
+      }
+    };
+    
+    // Automatically confirm the match with the new contact
+    confirmMatch(newContactMatch);
   };
 
   // Effect to fetch suggestions when selected payment changes
@@ -198,17 +231,53 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
       {/* Header */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-          Match Suggestions
+          Contact Matching
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          AI-powered contact matching for payment reconciliation
+          Find and match contacts for payment reconciliation using AI suggestions, manual search, or create new contacts
         </p>
-        {state.processingTimeMs && (
+        {state.processingTimeMs && activeTab === 'suggestions' && (
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            Processing time: {state.processingTimeMs}ms
+            AI processing time: {state.processingTimeMs}ms
           </p>
         )}
       </div>
+
+      {/* Tab Navigation */}
+      {selectedPayment && (
+        <div className="flex space-x-1 border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setActiveTab('suggestions')}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+              activeTab === 'suggestions'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            🤖 AI Suggestions
+          </button>
+          <button
+            onClick={() => setActiveTab('manual-search')}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+              activeTab === 'manual-search'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            🔍 Manual Search
+          </button>
+          <button
+            onClick={() => setActiveTab('create-contact')}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+              activeTab === 'create-contact'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            ➕ Create New
+          </button>
+        </div>
+      )}
 
       {/* Selected Payment Summary */}
       {selectedPayment && (
@@ -279,72 +348,76 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
         </div>
       )}
 
-      {/* No Payment Selected */}
-      {!selectedPayment && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-            <span className="text-2xl">🔗</span>
-          </div>
-          <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
-            No Payment Selected
-          </h4>
-          <p className="text-gray-500 dark:text-gray-400">
-            Select a payment from the Payment Processing tab to see AI-powered match suggestions
-          </p>
-        </div>
-      )}
 
-      {/* Error State */}
-      {state.error && (
-        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-          <div className="flex items-start space-x-3">
-            <span className="text-red-400 text-lg">⚠️</span>
-            <div className="flex-1">
-              <h4 className="font-medium text-red-800 dark:text-red-300">
-                Error Loading Match Suggestions
-              </h4>
-              <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-                {state.error}
-              </p>
-              {selectedPayment && (
-                <button
-                  onClick={() => fetchMatchSuggestions(selectedPayment)}
-                  className="mt-2 text-sm bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 px-3 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
-                >
-                  Try Again
-                </button>
+      {/* Tab Content */}
+      {selectedPayment && (
+        <div className="min-h-[400px]">
+          {/* AI Suggestions Tab */}
+          {activeTab === 'suggestions' && (
+            <>
+              {/* Error State */}
+              {state.error && (
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex items-start space-x-3">
+                    <span className="text-red-400 text-lg">⚠️</span>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-red-800 dark:text-red-300">
+                        Error Loading Match Suggestions
+                      </h4>
+                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                        {state.error}
+                      </p>
+                      <button
+                        onClick={() => fetchMatchSuggestions(selectedPayment)}
+                        className="mt-2 text-sm bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 px-3 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Loading State */}
-      {state.loading && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
-            Finding match suggestions using AI...
-          </p>
-        </div>
-      )}
+              {/* Loading State */}
+              {state.loading && (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">
+                    Finding match suggestions using AI...
+                  </p>
+                </div>
+              )}
 
-      {/* Match Suggestions */}
-      {selectedPayment && !state.loading && !state.error && (
-        <>
-          {state.suggestions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🚫</span>
-              </div>
-              <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
-                No Matches Found
-              </h4>
-              <p className="text-gray-500 dark:text-gray-400">
-                No potential contact matches were found for this payment. You may need to add the contact manually.
-              </p>
-            </div>
-          ) : (
+              {/* Match Suggestions */}
+              {!state.loading && !state.error && (
+                <>
+                  {state.suggestions.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">🚫</span>
+                      </div>
+                      <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
+                        No AI Matches Found
+                      </h4>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        No potential contact matches were found for this payment using AI analysis.
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => setActiveTab('manual-search')}
+                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors"
+                        >
+                          Try Manual Search
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('create-contact')}
+                          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors"
+                        >
+                          Create New Contact
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -490,8 +563,108 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
                 ))}
               </div>
             </div>
+                  )}
+                </>
+              )}
+            </>
           )}
-        </>
+
+          {/* Manual Search Tab */}
+          {activeTab === 'manual-search' && (
+            <>
+              <ManualContactSearch
+                onContactSelected={handleManualContactSelected}
+                onCreateNewContact={() => setActiveTab('create-contact')}
+              />
+              
+              {/* Show selected contact for confirmation */}
+              {manuallySelectedContact && (
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 mt-4">
+                  <h5 className="font-medium text-green-800 dark:text-green-300 mb-2">
+                    Selected Contact
+                  </h5>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-green-700 dark:text-green-400">
+                        {manuallySelectedContact.firstName && manuallySelectedContact.lastName
+                          ? `${manuallySelectedContact.firstName} ${manuallySelectedContact.lastName}`
+                          : manuallySelectedContact.name || manuallySelectedContact.email || 'Unknown Contact'
+                        }
+                      </p>
+                      {manuallySelectedContact.email && (
+                        <p className="text-sm text-green-600 dark:text-green-500">
+                          {manuallySelectedContact.email}
+                        </p>
+                      )}
+                      {manuallySelectedContact.membershipType && (
+                        <p className="text-sm text-green-600 dark:text-green-500">
+                          {manuallySelectedContact.membershipType}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        const manualMatch: ContactMatch = {
+                          contactId: manuallySelectedContact.id,
+                          contact: {
+                            firstName: manuallySelectedContact.firstName,
+                            lastName: manuallySelectedContact.lastName,
+                            email: manuallySelectedContact.email,
+                            membershipType: manuallySelectedContact.membershipType,
+                          },
+                          confidence: 1.0,
+                          reasoning: {
+                            manualSelection: { score: 1.0, details: 'Manually selected by user' }
+                          }
+                        };
+                        confirmMatch(manualMatch);
+                      }}
+                      disabled={state.confirmingMatch !== null}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        state.confirmingMatch === manuallySelectedContact.id
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-green-600 text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500'
+                      }`}
+                    >
+                      {state.confirmingMatch === manuallySelectedContact.id ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                          Confirming...
+                        </div>
+                      ) : (
+                        'Confirm Match'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Create Contact Tab */}
+          {activeTab === 'create-contact' && (
+            <CreateContactForm
+              selectedPayment={selectedPayment}
+              onContactCreated={handleContactCreated}
+              onCancel={() => setActiveTab('suggestions')}
+            />
+          )}
+        </div>
+      )}
+
+      {/* No Payment Selected */}
+      {!selectedPayment && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+            <span className="text-2xl">🔗</span>
+          </div>
+          <h4 className="text-gray-700 dark:text-gray-300 font-medium mb-2">
+            No Payment Selected
+          </h4>
+          <p className="text-gray-500 dark:text-gray-400">
+            Select a payment from the Payment Processing tab to see contact matching options
+          </p>
+        </div>
       )}
     </div>
   );

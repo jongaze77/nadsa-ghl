@@ -170,25 +170,7 @@ export class MatchingService {
   ): Promise<MatchSuggestion[]> {
     const suggestions: MatchSuggestion[] = [];
 
-    // Get recently reconciled contact IDs (last 7 days)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recentReconciliations = await prisma.reconciliationLog.findMany({
-      where: {
-        reconciledAt: {
-          gte: sevenDaysAgo
-        }
-      },
-      select: {
-        contactId: true
-      }
-    });
-    const excludedContactIds = new Set(recentReconciliations.map(r => r.contactId));
-
     for (const contact of contacts) {
-      // Skip recently reconciled contacts
-      if (excludedContactIds.has(contact.id)) {
-        continue;
-      }
       const nameMatch = this.calculateNameMatch(paymentData, contact);
       const amountMatch = this.calculateAmountMatch(paymentData.amount, contact.membershipType);
       const emailMatch = this.calculateEmailMatch(paymentData, contact);

@@ -96,9 +96,10 @@ export interface ContactMatch {
     nameMatch?: { score: number };
     emailMatch?: { score: number };
     amountMatch?: { score: number };
+    manualSelection?: { score: number; details: string };
+    newContact?: { score: number; details: string };
   };
   contact: {
-    id: string;
     firstName?: string;
     lastName?: string;
     email?: string;

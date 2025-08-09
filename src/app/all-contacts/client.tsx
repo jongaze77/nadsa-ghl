@@ -90,16 +90,16 @@ type SortState = {
   direction: 'asc' | 'desc';
 };
 
-// Column definitions
+// Column definitions with fixed widths
 const COLUMNS = [
-  { key: 'lastName', label: 'Last Name' },
-  { key: 'firstName', label: 'First Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'address1', label: 'Address' },
-  { key: 'postalCode', label: 'Postcode' },
-  { key: 'membershipType', label: 'Type' },
-  { key: 'renewal_date', label: 'Renewal Date' },
+  { key: 'lastName', label: 'Last Name', width: 'w-24' },
+  { key: 'firstName', label: 'First Name', width: 'w-24' },
+  { key: 'email', label: 'Email', width: 'w-48' },
+  { key: 'phone', label: 'Phone', width: 'w-28' },
+  { key: 'address1', label: 'Address', width: 'w-44' },
+  { key: 'postalCode', label: 'Postcode', width: 'w-20' },
+  { key: 'membershipType', label: 'Type', width: 'w-24' },
+  { key: 'renewal_date', label: 'Renewal Date', width: 'w-28' },
 ];
 
 function getSortFn(column: string, direction: 'asc' | 'desc') {
@@ -413,14 +413,14 @@ export default function ContactsClient() {
         {/* Table Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed" style={{minWidth: '1200px'}}>
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   {COLUMNS.map(col => (
                     <th
                       key={col.key}
                       onClick={() => handleHeaderClick(col.key)}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors select-none"
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors select-none ${col.width}`}
                     >
                       <div className="flex items-center space-x-1">
                         <span>{col.label}</span>
@@ -491,13 +491,13 @@ export default function ContactsClient() {
                         if (e.key === 'Enter') handleRowClick(contact, e as any);
                       }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium" title={contact.lastName}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium w-24" title={contact.lastName}>
                         {truncate(contact.lastName)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.firstName}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-24" title={contact.firstName}>
                         {truncate(contact.firstName)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.email}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-48" title={contact.email}>
                         {contact.email ? (
                           <a 
                             href={`mailto:${contact.email}`} 
@@ -510,7 +510,7 @@ export default function ContactsClient() {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.phone}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 w-28" title={contact.phone}>
                         {contact.phone ? (
                           <a 
                             href={`tel:${contact.phone}`} 
@@ -523,13 +523,13 @@ export default function ContactsClient() {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.address1}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-44" title={contact.address1}>
                         {truncate(contact.address1) || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.postalCode}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-20" title={contact.postalCode}>
                         {truncate(contact.postalCode) || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm" title={contact.membershipType}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm w-24" title={contact.membershipType}>
                         {contact.membershipType ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                             {truncate(contact.membershipType)}
@@ -538,7 +538,7 @@ export default function ContactsClient() {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.renewal_date}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-28" title={contact.renewal_date}>
                         {contact.renewal_date ? truncate(contact.renewal_date) : <span className="text-gray-400">—</span>}
                       </td>
                     </tr>

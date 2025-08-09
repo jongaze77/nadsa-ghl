@@ -125,9 +125,9 @@ export function mapContactRole(singleOrDoubleValue: string): string {
   const normalizedValue = singleOrDoubleValue.toLowerCase().trim();
   
   if (normalizedValue === 'single') {
-    return 'subscriber,Single Member';
+    return 'subscriber,single_member';
   } else if (normalizedValue === 'double') {
-    return 'subscriber,Double Member';
+    return 'subscriber,double_member';
   }
   
   // Fallback for unknown values

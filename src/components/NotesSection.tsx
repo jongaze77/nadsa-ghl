@@ -126,7 +126,7 @@ export default function NotesSection({ contactId, isVisible = true }: NotesSecti
       </div>
 
       {/* Add New Note Form */}
-      <form onSubmit={handleAddNote} className="space-y-4">
+      <div className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="new-note" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Add New Note
@@ -178,7 +178,7 @@ export default function NotesSection({ contactId, isVisible = true }: NotesSecti
             )}
           </button>
         </div>
-      </form>
+      </div>
 
       {/* Notes List */}
       <div className="space-y-4">

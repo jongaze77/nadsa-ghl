@@ -132,7 +132,6 @@ export async function POST(
     // Create note in GHL
     const notePayload = {
       body: content.trim(),
-      userId: session.user?.email || 'system', // Use email as identifier
     };
 
     const response = await fetchWithRetry(

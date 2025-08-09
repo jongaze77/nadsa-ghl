@@ -24,6 +24,9 @@ export interface UploadResponse {
   errors?: string[];
   processed?: number;
   skipped?: number;
+  parsingErrors?: number;
+  duplicates?: number;
+  skippedDetails?: Array<{ type: string; reason: string; reference?: string }>;
   message?: string;
 }
 

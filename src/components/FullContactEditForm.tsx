@@ -211,15 +211,7 @@ export default function FullContactEditForm({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔵 Form submission triggered - validating form');
-    
-    // Validate form before submission
-    if (!validateForm()) {
-      console.log('❌ Form validation failed - not submitting');
-      return;
-    }
-    
-    console.log('✅ Form validation passed - calling onSave');
+    console.log('🔵 Form submission triggered - calling onSave directly');
     onSave(buildPayload(form));
     setIsDirty(false);
   };
@@ -533,7 +525,7 @@ export default function FullContactEditForm({
           </button>
           <button
             type="submit"
-            disabled={saving || Object.keys(fieldErrors).length > 0}
+            disabled={saving}
             className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
             {saving ? (

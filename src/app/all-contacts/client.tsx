@@ -187,25 +187,43 @@ function EditContactModal({
   }, [contact.id]);
 
   const handleSave = async (payload: any) => {
-    console.log('🔵 handleSave called with payload:', payload);
+    console.log('🔵 [CLIENT] handleSave called with payload:', payload);
+    console.log('🔵 [CLIENT] Contact ID:', contact.id);
+    console.log('🔵 [CLIENT] Current saving state:', saving);
+    
     setSaving(true);
     setError(null);
+    
     try {
+      console.log('🔵 [CLIENT] Making PUT request to:', `/api/contacts/${contact.id}`);
       const response = await fetch(`/api/contacts/${contact.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      console.log('🔵 API response:', response.status, response.ok);
-      if (!response.ok) throw new Error('Failed to update contact');
+      
+      console.log('🔵 [CLIENT] API response status:', response.status, 'ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [CLIENT] API error response:', errorText);
+        throw new Error(`Failed to update contact: ${response.status}`);
+      }
+      
       const updated = await response.json();
-      console.log('✅ Contact updated successfully:', updated);
+      console.log('✅ [CLIENT] Contact updated successfully:', updated);
+      
+      console.log('🔵 [CLIENT] Calling onSaved with updated contact');
       onSaved(updated);
+      
+      console.log('🔵 [CLIENT] Closing modal');
       onClose();
+      
     } catch (err) {
-      console.error('❌ Error in handleSave:', err);
+      console.error('❌ [CLIENT] Error in handleSave:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
+      console.log('🔵 [CLIENT] Setting saving to false');
       setSaving(false);
     }
   };

@@ -1,310 +1,260 @@
-# Debug GitHub Issue Command
+# Debug GitHub Issue Command (v2.0)
 
-This command implements systematic debugging for GitHub issues using issue comments as the debug log location, combining structured investigation with team collaboration.
+This command implements systematic debugging for GitHub issues with fundamentals-first approach and comprehensive comment analysis.
 
 ## Usage
 `/debug-github-issue [issue-number]` - Start or continue debugging a specific GitHub issue
 
 ## Overview
 
-This hybrid command merges the systematic debugging approach from `debug-issue.md` with GitHub issue integration from `fix-github-issues.md`. Instead of local markdown files, **all debug progress is tracked in GitHub issue comments**, providing:
-
-- **Centralized tracking** - Debug info stays with the issue
-- **Team visibility** - Real-time progress updates
-- **Persistent history** - Comments preserved even if local files lost
-- **Collaborative debugging** - Team members can contribute insights
-- **Automatic linking** - Debug commits reference issue number
+An improved systematic debugging approach that prioritizes fundamentals and learns from previous attempts. **All debug progress is tracked in GitHub issue comments** for team visibility and collaboration.
 
 ## How It Works
 
-### Phase 0: GitHub Issue Setup & Validation
-1. **Fetch issue details**: `gh issue view [issue-number]`
-2. **Validate issue exists** and is open
-3. **Check for existing debug session** in issue comments
-4. **Post initial debug comment** to claim the issue
-5. **Create debug branch**: `debug/issue-${issue-number}-YYYY-MM-DD`
+### Phase 0: Issue Analysis & History Review
+1. **Fetch issue details**: `gh issue view [issue-number] --comments`
+2. **Parse ALL existing comments** for previous debug attempts
+3. **Extract already-fixed issues** from comment history
+4. **Identify repeated patterns** to avoid
+5. **Check for existing debug branch**: `debug/issue-${issue-number}-YYYY-MM-DD`
 6. **Safety checks**: Ensure clean working directory
 
-### Phase 1: Investigation Planning
-- **Analyze issue description** and reproduction steps
-- **Search codebase** for relevant files and patterns
-- **Post investigation plan** as GitHub comment
-- **Set up baseline state** for systematic testing
+### Phase 1: Fundamentals-First Investigation
+**MANDATORY CHECKLIST** (before any complex debugging):
+
+#### Structural Validation
+- [ ] **HTML structure check**: Forms, buttons, proper nesting
+- [ ] **Component hierarchy**: Parent-child relationships correct
+- [ ] **Event binding verification**: onClick, onSubmit, onChange connected
+- [ ] **Element positioning**: Critical elements inside proper containers
+
+#### Working Example Comparison  
+- [ ] **Find similar working components** in codebase
+- [ ] **Compare structure/patterns** side by side
+- [ ] **Identify key differences** from working examples
+- [ ] **Document baseline expectations** from working code
+
+#### Basic Functionality Test
+- [ ] **Console logging**: Add debugging at interaction points
+- [ ] **Event flow verification**: Clicks → handlers → expected actions
+- [ ] **State management check**: Data flows correctly
+- [ ] **Network inspection**: API calls firing as expected
+
+**⚠️ RULE: Cannot proceed to complex debugging until fundamentals checklist is complete**
 
 ### Phase 2: Systematic Debug Loop
 For each debugging attempt:
-1. **Post attempt comment** with hypothesis and expected outcome
-2. **Implement focused change** to test hypothesis
-3. **Test and document results** in follow-up comment
-4. **Commit with structured message**: `Fix #${issue-number}: Attempt N - [hypothesis]`
-5. **Evaluate circuit breaker conditions**
-6. **Post progress update** or escalation comment
 
-### Phase 3: Circuit Breaker & Escalation
-Monitor debug progress through comment analysis:
-- **Track attempt count** via comment metadata
-- **Detect repeated patterns** in hypothesis approaches
-- **Measure information gain** from each attempt
-- **Auto-escalate** when thresholds exceeded
-- **Tag team members** for collaborative assistance
+1. **Post attempt comment** with hypothesis based on fundamentals
+2. **Test single focused change** (no complex multi-step fixes)
+3. **Verify basic functionality** still works after change
+4. **Document results** with evidence (logs, screenshots, behavior)
+5. **Commit with structured message**: `Fix #${issue-number}: Attempt N - [specific change]`
 
-### Phase 4: Resolution & Documentation
+### Phase 3: Enhanced Circuit Breaker Logic
+
+#### Automatic Triggers:
+- **After 2 attempts**: Force fundamentals re-check
+- **After 3 attempts**: Mandate working example comparison
+- **After 4 attempts**: Auto-escalate with comprehensive summary
+- **Repeated patterns**: Same hypothesis type attempted twice
+
+#### Circuit Breaker Actions:
+1. **Back-to-basics mode**: Force structural validation
+2. **Working example deep-dive**: Mandatory comparison analysis  
+3. **Team escalation**: Tag relevant team members with full context
+4. **Pair debugging request**: Schedule collaborative session
+
+### Phase 4: Resolution & Knowledge Capture
+
 When issue is resolved:
-1. **Post resolution comment** with final solution
-2. **Create pull request** linking to issue
-3. **Update issue status** to resolved
-4. **Document lessons learned** for future reference
+1. **Post resolution comment** with root cause analysis
+2. **Document lessons learned** for future prevention
+3. **Update debugging knowledge base** with new patterns
+4. **Create preventive measures** (linting rules, checklists, etc.)
 
 ## GitHub Comment Structure
 
 ### Initial Debug Session Comment
 ```markdown
-🔍 **Debug Session Started**
+🔍 **Debug Session Started v2.0**
 
 **Issue**: #{issue-number} - {title}
 **Debug Branch**: `debug/issue-{issue-number}-YYYY-MM-DD`
 **Started**: {timestamp}
 **Session ID**: `DEBUG-{issue-number}-{session-counter}`
 
-## Investigation Plan
-- [ ] {planned step 1}
-- [ ] {planned step 2}
-- [ ] {planned step 3}
+## Comment History Analysis
+{Summary of previous debug attempts and already-fixed issues}
 
-## Circuit Breaker Settings
-- Max attempts: 4
-- Max repeated approaches: 2
-- Total attempt limit: 6
-- Auto-escalate on: pattern detection, no progress
+## Fundamentals Checklist
+- [ ] HTML structure validation
+- [ ] Component hierarchy check  
+- [ ] Event binding verification
+- [ ] Working example comparison
+- [ ] Basic functionality test
 
----
-*This is an automated debug session. Progress will be updated in subsequent comments.*
-```
+## Circuit Breaker v2.0
+- Max attempts before fundamentals re-check: 2
+- Max attempts before working example mandate: 3
+- Auto-escalation: 4 attempts or repeated patterns
+- Back-to-basics triggers: Structural issues, event flow problems
 
-### Debug Attempt Comments
-```markdown
-## 🧪 Debug Attempt {N} - {timestamp}
-
-**Hypothesis**: {What might be causing this issue}
-**Reasoning**: {Why this hypothesis makes sense}
-**Expected Result**: {What should happen if hypothesis is correct}
-
-### Actions Taken
-- {Specific change 1}
-- {Specific change 2}
-- Files modified: `{file1.ts}`, `{file2.tsx}`
-
-### Results
-**Actual Result**: {What actually happened}
-**Commit**: {commit-hash}
-**Status**: ✅ Success | ❌ Failed | ⚠️ Partial | 🔄 Needs more testing
-
-### Analysis
-**New Information**: {What did we learn from this attempt}
-**Next Steps**: {What to try next based on results}
-
-### Circuit Breaker Status
-- Attempts made: {N}/6
-- Unique hypotheses: {N}
-- Information gain: High | Medium | Low | None
-- Decision: CONTINUE | ESCALATE | PIVOT
-```
-
-### Circuit Breaker Escalation Comment
-```markdown
-🚨 **Debug Circuit Breaker Triggered**
-
-After {N} attempts, systematic debugging is being escalated:
-
-### Summary of Attempts
-{Table of all attempts with results}
-
-### Patterns Detected
-- {Pattern 1 that suggests we're stuck}
-- {Pattern 2 that indicates need for help}
-
-### Current State
-- **Working branch**: `debug/issue-{issue-number}-YYYY-MM-DD`
-- **Files modified**: {list}
-- **Test status**: {current test results}
-
-### Recommendation
-{Specific recommendation for next steps}
-
-@{team-lead} @{relevant-expert} - Could use collaborative input on this issue. All debugging history is preserved in the commits above.
+**⚠️ Must complete fundamentals checklist before complex debugging**
 
 ---
-*Automated escalation triggered by circuit breaker logic*
+*Enhanced systematic debugging - fundamentals first, then complexity*
 ```
 
-### Resolution Comment
+### Fundamentals Check Comment
 ```markdown
-✅ **Issue Resolved**
+## 🔧 Fundamentals Check - {timestamp}
 
-## Solution Summary
-{Brief description of what fixed the issue}
+### Structural Validation
+- **HTML Structure**: ✅ Forms properly nested, buttons inside forms
+- **Component Hierarchy**: ✅ Parent-child relationships correct
+- **Event Bindings**: ❌ onClick handler not connected to button
+- **Element Positioning**: ❌ Submit button outside form element
 
-## Root Cause
-{What was actually wrong}
+### Working Example Analysis
+- **Similar Component Found**: ContactEditForm.tsx (working)
+- **Key Differences**:
+  - Working: Button inside `<form>` with `onSubmit={handler}`
+  - Broken: Button outside `</form>` - cannot trigger submission
+- **Baseline Pattern**: Simple form with submit button inside form element
 
-## Implementation
-- **Working commit**: {commit-hash}
-- **Files changed**: {list}
-- **Pull request**: #{pr-number}
+### Immediate Action Required
+**Root Cause Identified**: Submit button positioned outside form structure
+**Fix**: Move button inside form element
+**Priority**: HIGH - Basic HTML structure issue
 
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual verification complete
-- [ ] Edge cases covered
+### Evidence
+- No console logs on button click (event not reaching handler)
+- Working example has different DOM structure
+- HTML validation would catch this fundamental error
 
-## Lessons Learned
-{Key insights for preventing similar issues}
+**Status**: 🚨 FUNDAMENTAL ISSUE FOUND - Proceeding with structural fix
+```
 
-## Prevention
-{How to avoid this in the future}
+### Circuit Breaker Escalation Comment  
+```markdown
+🚨 **Circuit Breaker Triggered v2.0**
+
+After {N} attempts, escalating with enhanced analysis:
+
+### Fundamentals Status
+- **Structural Check**: {PASS/FAIL with details}
+- **Working Example**: {COMPARED/NOT_COMPARED}  
+- **Event Flow**: {VERIFIED/BROKEN}
+- **Basic Functionality**: {WORKING/BROKEN}
+
+### Debug Pattern Analysis
+{Automatic analysis of repeated approaches}
+
+### Recommended Next Steps
+1. **If fundamentals failed**: Back-to-basics structural fix
+2. **If patterns detected**: Try alternative approach from working examples
+3. **If complex logic issue**: Pair debugging session needed
+4. **If environment issue**: Infrastructure/build investigation
+
+### Team Escalation
+@{team-lead} @{relevant-expert} - Systematic debugging has reached limits.
+- **Branch**: `debug/issue-{issue-number}-YYYY-MM-DD` 
+- **All attempts**: Preserved in commit history
+- **Fundamentals status**: {summary}
+- **Recommended**: {specific next action}
 
 ---
-*Debug session complete. Branch `debug/issue-{issue-number}-YYYY-MM-DD` preserved for reference.*
+*Enhanced circuit breaker - learns from patterns and enforces fundamentals*
 ```
 
 ## Command Implementation
 
-The command follows this workflow:
+Enhanced workflow with fundamentals-first approach:
 
 ```bash
-# 1. Validate and fetch issue
-gh issue view $ISSUE_NUMBER
+# 1. Analyze issue history (NEW)
+gh issue view $ISSUE_NUMBER --comments | parse_previous_debug_attempts
 
-# 2. Check for existing debug session
-gh issue view $ISSUE_NUMBER --comments | grep "🔍 **Debug Session Started**"
+# 2. Extract already-fixed issues (NEW) 
+grep -E "✅|FIXED|resolved" | extract_completed_items
 
-# 3. Create debug branch if not exists  
-git checkout -b debug/issue-$ISSUE_NUMBER-$(date +%Y-%m-%d)
+# 3. Create/switch to debug branch
+git checkout -b debug/issue-$ISSUE_NUMBER-$(date +%Y-%m-%d) 2>/dev/null || git checkout debug/issue-$ISSUE_NUMBER-$(date +%Y-%m-%d)
 
-# 4. Post initial comment
-gh issue comment $ISSUE_NUMBER --body "$INITIAL_DEBUG_COMMENT"
+# 4. MANDATORY: Run fundamentals checklist (NEW)
+run_fundamentals_check() {
+  echo "🔧 Running fundamentals checklist..."
+  check_html_structure
+  find_working_examples  
+  verify_event_bindings
+  test_basic_functionality
+}
 
-# 5. Begin systematic debugging loop
-# ... (investigation and attempts)
+# 5. Only proceed if fundamentals pass (NEW)
+if [[ $FUNDAMENTALS_PASSED == "true" ]]; then
+  begin_systematic_debugging
+else
+  post_fundamentals_failure_and_exit
+fi
 
-# 6. Monitor circuit breaker via comment analysis
-# ... (count attempts, detect patterns)
-
-# 7. Escalate or resolve based on results
+# 6. Enhanced circuit breaker monitoring (IMPROVED)
+monitor_circuit_breaker() {
+  local attempts=$(count_debug_attempts)
+  local patterns=$(detect_repeated_patterns)
+  
+  if [[ $attempts -ge 2 ]]; then
+    force_fundamentals_recheck
+  elif [[ $attempts -ge 3 ]]; then  
+    mandate_working_example_comparison
+  elif [[ $attempts -ge 4 ]] || [[ $patterns == "detected" ]]; then
+    auto_escalate_with_analysis
+  fi
+}
 ```
 
-## Circuit Breaker Logic
+## Key Improvements v2.0
 
-### Attempt Tracking
-- **Parse comments** to count debug attempts
-- **Analyze hypothesis patterns** to detect repetition
-- **Measure progress** by new information gained
-- **Track time spent** on debugging session
+### 1. **Comment History Analysis**
+- Parses all existing comments before starting
+- Extracts already-completed work to avoid duplication
+- Learns from previous failed approaches
+- Builds on existing progress instead of restarting
 
-### Escalation Triggers
-- **4+ failed attempts** with minimal learning
-- **2+ repeated hypothesis approaches**
-- **6+ total attempts** regardless of uniqueness
-- **24+ hours** of debugging time elapsed
-- **No progress** in last 3 attempts
+### 2. **Fundamentals-First Mandatory Approach**
+- Cannot proceed without completing structural validation
+- Forces working example comparison early
+- Catches basic issues (HTML structure, event binding) immediately
+- Prevents over-engineering simple problems
 
-### Escalation Actions
-1. **Tag relevant team members** based on file ownership
-2. **Summarize all attempts** in structured format
-3. **Preserve debug branch** for collaborative review
-4. **Request specific expertise** based on issue type
-5. **Schedule pair debugging** if available
+### 3. **Enhanced Circuit Breaker Logic**
+- Triggers earlier (after 2 attempts instead of 4)
+- Forces specific actions based on failure type
+- Detects and prevents repeated debugging patterns
+- Auto-escalates with detailed analysis for team efficiency
 
-## Integration Features
+### 4. **Working Example Integration**
+- Makes comparison with working components mandatory
+- Identifies baseline patterns from proven code
+- Highlights deviations that may cause issues
+- Uses working examples as debugging templates
 
-### Git Integration
-- **Branch naming**: `debug/issue-{number}-YYYY-MM-DD`
-- **Commit messages**: `Fix #{number}: Attempt N - {hypothesis} - {result}`
-- **PR creation**: Auto-links to issue, includes debug summary
-- **Tag preservation**: All debug commits preserved for learning
+### 5. **Evidence-Based Debugging**
+- Requires proof of basic functionality before complex theories
+- Documents evidence in every debugging step
+- Maintains debugging knowledge base for future issues
+- Creates preventive measures from lessons learned
 
-### GitHub CLI Integration
-- **Issue fetching**: `gh issue view` for details
-- **Comment posting**: `gh issue comment` for all updates
-- **Status updates**: `gh issue edit` for labels/assignments
-- **PR creation**: `gh pr create` with proper linking
+## Success Metrics v2.0
 
-### Team Collaboration
-- **@mentions**: Auto-tag relevant team members on escalation
-- **Label management**: Add 'debugging', 'needs-help' labels automatically
-- **Assignment**: Assign issue to debugger during session
-- **Milestone tracking**: Preserve milestone assignments
-
-## Safety & Recovery
-
-### Session Recovery
-If local session is interrupted:
-1. **Parse issue comments** to reconstruct state
-2. **Checkout debug branch** to continue work
-3. **Resume from last attempt** based on comment history
-4. **Maintain attempt numbering** across interruptions
-
-### Comment Backup
-- **Local cache**: Store comment drafts before posting
-- **Git preservation**: All debug commits contain comment content
-- **Branch protection**: Debug branches never auto-deleted
-- **Export capability**: Can export full debug log from comments
-
-## Usage Examples
-
-### Starting New Debug Session
-```bash
-/debug-github-issue 42
-
-# Creates:
-# - Branch: debug/issue-42-2025-01-06
-# - Initial comment on issue #42
-# - Local session tracking
-# - Circuit breaker monitoring
-```
-
-### Continuing Existing Session
-```bash
-/debug-github-issue 42
-
-# Detects existing session and:
-# - Switches to existing debug branch
-# - Reviews previous attempts from comments
-# - Continues attempt numbering
-# - Maintains circuit breaker state
-```
-
-### During Debug Session
-Available commands:
-- `/debug-attempt` - Log new debugging attempt (posts comment)
-- `/debug-status` - Show current circuit breaker state
-- `/debug-escalate` - Force escalation with current state
-- `/debug-resolve` - Mark issue as resolved, create PR
-- `/debug-abandon` - Abandon session (preserves all history)
-
-## Success Metrics
-
-This command aims to:
-- **Eliminate infinite debug loops** through circuit breaker in comments
-- **Enable team collaboration** on complex debugging issues
-- **Preserve institutional knowledge** in issue history
-- **Accelerate resolution** through systematic approach
-- **Maintain transparency** of debugging progress
-- **Build debugging competency** across the team
-
-## Configuration
-
-Configurable thresholds (via CLAUDE.md or command args):
-```markdown
-# Debug settings
-debug_max_attempts: 4
-debug_max_repeated: 2  
-debug_total_limit: 6
-debug_escalation_tags: ["@team-lead", "@senior-dev"]
-debug_time_limit_hours: 24
-```
+Enhanced command aims to:
+- **Catch fundamental issues in first 2 attempts** (vs 6+ in v1.0)
+- **Reduce average debug time by 60%** through fundamentals-first
+- **Eliminate repeated debugging patterns** via comment analysis
+- **Improve team learning** through systematic knowledge capture
+- **Increase debugging success rate** through working example comparison
+- **Build institutional debugging knowledge** through enhanced documentation
 
 ---
 
-**Note**: This command combines the systematic rigor of local debugging with the collaborative benefits of GitHub issue tracking, creating a powerful hybrid approach for complex issue resolution.
+**The key lesson: Always check the fundamentals first. Complex theories come after basic structure is verified.**

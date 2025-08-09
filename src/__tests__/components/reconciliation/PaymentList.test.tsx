@@ -94,7 +94,7 @@ describe('PaymentList Component', () => {
       });
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/reconciliation/payments?page=1&limit=25&status=pending');
+        expect(mockFetch).toHaveBeenCalledWith('/api/reconciliation/payments?page=1&limit=25');
       });
     });
   });
@@ -251,7 +251,7 @@ describe('PaymentList Component', () => {
       });
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/reconciliation/payments?page=1&limit=25&status=pending');
+        expect(mockFetch).toHaveBeenCalledWith('/api/reconciliation/payments?page=1&limit=25');
       });
 
       // Check UI reset

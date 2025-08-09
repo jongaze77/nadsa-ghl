@@ -49,10 +49,11 @@ export class MatchingService {
   private readonly AMOUNT_WEIGHT = 0.2;
 
   private readonly membershipFees: Record<string, MembershipFeeRange> = {
-    'Single': { min: 20, max: 20 },
-    'Double': { min: 30, max: 30 },
-    'Associate': { min: 10, max: 10 },
-    'Newsletter Only': { min: 0, max: 0 }
+    'Single': { min: 20, max: 30 },
+    'Double': { min: 30, max: 40 },
+    'Associate': { min: 40, max: 60 },
+    'Newsletter Only': { min: 0, max: 5 },
+    'Full': { min: 60, max: 80 }
   };
 
   constructor() {}
@@ -148,7 +149,25 @@ export class MatchingService {
   ): Promise<MatchSuggestion[]> {
     const suggestions: MatchSuggestion[] = [];
 
+    // Get recently reconciled contact IDs (last 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentReconciliations = await prisma.reconciliationLog.findMany({
+      where: {
+        reconciledAt: {
+          gte: sevenDaysAgo
+        }
+      },
+      select: {
+        contactId: true
+      }
+    });
+    const excludedContactIds = new Set(recentReconciliations.map(r => r.contactId));
+
     for (const contact of contacts) {
+      // Skip recently reconciled contacts
+      if (excludedContactIds.has(contact.id)) {
+        continue;
+      }
       const nameMatch = this.calculateNameMatch(paymentData, contact);
       const amountMatch = this.calculateAmountMatch(paymentData.amount, contact.membershipType);
       const emailMatch = this.calculateEmailMatch(paymentData, contact);

@@ -119,6 +119,9 @@ describe('MatchingService', () => {
 
   describe('findMatches', () => {
     beforeEach(() => {
+      // Mock database contact queries
+      (prisma.contact.findMany as jest.Mock).mockResolvedValue(mockContacts);
+      
       // Mock GHL API calls
       (ghlApi.fetchAllContactsFromGHL as jest.Mock).mockResolvedValue({
         contacts: mockContacts,
@@ -240,6 +243,9 @@ describe('MatchingService', () => {
 
   describe('findBatchMatches', () => {
     beforeEach(() => {
+      // Mock database contact queries
+      (prisma.contact.findMany as jest.Mock).mockResolvedValue(mockContacts);
+      
       (ghlApi.fetchAllContactsFromGHL as jest.Mock).mockResolvedValue({
         contacts: mockContacts,
       });
@@ -382,6 +388,9 @@ describe('MatchingService', () => {
       await service.findMatches(mockPaymentData);
       jest.clearAllMocks();
 
+      // Make database fail so it falls back to GHL
+      (prisma.contact.findMany as jest.Mock).mockRejectedValue(new Error('DB Error'));
+
       // Refresh cache
       await service.refreshContactsCache();
 
@@ -439,6 +448,9 @@ describe('MatchingService', () => {
 
   describe('confidence scoring', () => {
     beforeEach(() => {
+      // Mock database contact queries
+      (prisma.contact.findMany as jest.Mock).mockResolvedValue(mockContacts);
+      
       (ghlApi.fetchAllContactsFromGHL as jest.Mock).mockResolvedValue({
         contacts: mockContacts,
       });
@@ -482,6 +494,9 @@ describe('MatchingService', () => {
 
   describe('Customer Field Matching (Enhanced)', () => {
     beforeEach(() => {
+      // Mock database contact queries
+      (prisma.contact.findMany as jest.Mock).mockResolvedValue(mockContacts);
+      
       (ghlApi.fetchAllContactsFromGHL as jest.Mock).mockResolvedValue({
         contacts: mockContacts,
       });

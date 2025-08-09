@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
-    const isAdminRoute = req.nextUrl.pathname.startsWith('/users');
+    const isAdminRoute = req.nextUrl.pathname.startsWith('/users') || req.nextUrl.pathname.startsWith('/admin');
     const isLoginPage = req.nextUrl.pathname === '/login';
 
     // Redirect to login if not authenticated

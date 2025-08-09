@@ -187,21 +187,43 @@ function EditContactModal({
   }, [contact.id]);
 
   const handleSave = async (payload: any) => {
+    console.log('🔵 [CLIENT] handleSave called with payload:', payload);
+    console.log('🔵 [CLIENT] Contact ID:', contact.id);
+    console.log('🔵 [CLIENT] Current saving state:', saving);
+    
     setSaving(true);
     setError(null);
+    
     try {
+      console.log('🔵 [CLIENT] Making PUT request to:', `/api/contacts/${contact.id}`);
       const response = await fetch(`/api/contacts/${contact.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error('Failed to update contact');
+      
+      console.log('🔵 [CLIENT] API response status:', response.status, 'ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [CLIENT] API error response:', errorText);
+        throw new Error(`Failed to update contact: ${response.status}`);
+      }
+      
       const updated = await response.json();
+      console.log('✅ [CLIENT] Contact updated successfully:', updated);
+      
+      console.log('🔵 [CLIENT] Calling onSaved with updated contact');
       onSaved(updated);
+      
+      console.log('🔵 [CLIENT] Closing modal');
       onClose();
+      
     } catch (err) {
+      console.error('❌ [CLIENT] Error in handleSave:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
+      console.log('🔵 [CLIENT] Setting saving to false');
       setSaving(false);
     }
   };
@@ -235,15 +257,13 @@ function EditContactModal({
   }
 
   return (
-    <div className="p-0">
-      <FullContactEditForm
-        contact={fullContact}
-        saving={saving}
-        error={error}
-        onSave={handleSave}
-        onCancel={onClose}
-      />
-    </div>
+    <FullContactEditForm
+      contact={fullContact}
+      saving={saving}
+      error={error}
+      onSave={handleSave}
+      onCancel={onClose}
+    />
   );
 }
 
@@ -330,11 +350,16 @@ export default function ContactsClient() {
   }
 
   function handleRowClick(contact: any, event: React.MouseEvent) {
+    console.log('🔵 [ROW] Row clicked for contact:', contact.id, contact.firstName, contact.lastName);
+    
     // CTRL/cmd-click opens edit in new tab
     if (event.ctrlKey || event.metaKey) {
+      console.log('🔵 [ROW] CTRL/CMD click detected - opening in new tab');
       window.open(`/contacts/${contact.id}`, '_blank');
       return;
     }
+    
+    console.log('🔵 [ROW] Setting selectedContact to open modal');
     setSelectedContact(contact);
   }
 
@@ -350,26 +375,43 @@ export default function ContactsClient() {
     }, []);
   
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
         <div
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[95vh] overflow-hidden relative border border-gray-200 dark:border-gray-700 flex flex-col"
           onClick={e => e.stopPropagation()}
         >
-          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-xl">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Edit Contact
-            </h2>
+          {/* Modal Header */}
+          <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex items-center justify-between rounded-t-xl flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  Edit Contact
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Update contact information and membership details
+                </p>
+              </div>
+            </div>
             <button
               className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               onClick={onClose}
-              aria-label="Close"
+              aria-label="Close modal"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          {children}
+          
+          {/* Modal Content */}
+          <div className="flex-1 overflow-hidden">
+            {children}
+          </div>
         </div>
       </div>
     );

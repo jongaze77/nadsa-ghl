@@ -10,6 +10,7 @@ export const FIELD_MAP: Record<string, string> = {
   hJQPtsVDFBxI1USEN83v: 'single_or_double_membership',
   w52V1FONYrhH0LUqDjBs: 'membership_start_date',
   cWMPNiNAfReHOumOhBB2: 'renewal_date',
+  XSEdoRxvFAJ6gh8p5Rdw: 'membership_payment_date',
   ojKOz9HxslwVJaBMqcAF: 'renewal_reminder',
   vJKGn7dzbGmmLUfzp0KY: 'standing_order',
   ABzFclt09Z30eBalbPKH: 'gift_aid',
@@ -406,6 +407,24 @@ function extractMembershipType(ghlContact: any): string | null {
   return normalizeMembershipType(membershipType);
 }
 
+function extractCustomFieldValue(ghlContact: any, fieldId: string): string | null {
+  const possibleCF =
+    ghlContact.customField ||
+    ghlContact.customFields ||
+    (ghlContact.contact && (ghlContact.contact.customField || ghlContact.contact.customFields));
+
+  if (!possibleCF) return null;
+
+  if (typeof possibleCF === 'object' && !Array.isArray(possibleCF)) {
+    return possibleCF[fieldId] || null;
+  } else if (Array.isArray(possibleCF)) {
+    const field = possibleCF.find((f: any) => f.id === fieldId);
+    return field ? field.value : null;
+  }
+
+  return null;
+}
+
 export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
   // Support multiple possible sources for id
   const id =
@@ -416,6 +435,9 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
 
   // Use the whole object as the "contact"
   const contact = { ...ghlContact, id };
+
+  // Extract specific custom fields that we need as separate columns
+  const renewalDate = extractCustomFieldValue(ghlContact, 'cWMPNiNAfReHOumOhBB2'); // renewal_date field ID
 
   return {
     id: contact.id,
@@ -441,6 +463,8 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
       ? new Date(contact.updatedAt)
       : null,
     lastSyncedAt: new Date(),
+    // Add renewal_date as a separate field for easier querying and display
+    renewal_date: renewalDate,
   };
 }
 

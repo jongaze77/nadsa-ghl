@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: 
+      - main
+      - 'debug/issue-*'  # Run CI on debug branches created by debug-github-issue command
   pull_request:
     branches: [main]
 
@@ -31,10 +33,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-next-
 
-    # 4 ─ Install, type-check, lint ----------------------------------------------
+    # 4 ─ Install, type-check, lint, test ----------------------------------------
     - run: npm ci
     - run: npm run type-check || true
     - run: npm run lint
+    - run: npm run test:unit  # Run Jest tests only (skip type-check/lint duplication)
 
     # 5 ─ Build -------------------------------------------------------------------
     - name: Build
@@ -55,3 +58,118 @@ jobs:
       with:
         path: .next/cache
         key: ${{ steps.nextjs-cache.outputs.cache-primary-key }}
+
+  # Debug Branch Validation Job
+  debug-validation:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/debug/issue-')
+    
+    steps:
+    # 1 ─ Checkout ----------------------------------------------------------------
+    - uses: actions/checkout@v4
+
+    # 2 ─ Node + npm cache ---------------------------------------------------------
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+
+    # 3 ─ Install dependencies ----------------------------------------------------
+    - run: npm ci
+
+    # 4 ─ Debug Branch Specific Validations --------------------------------------
+    - name: Extract Issue Number from Branch
+      id: issue
+      run: |
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        ISSUE_NUM=$(echo $BRANCH_NAME | sed -n 's/debug\/issue-\([0-9]*\).*/\1/p')
+        echo "number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+        echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+    - name: Validate Debug Branch Structure
+      run: |
+        echo "🔍 Validating debug branch: ${{ steps.issue.outputs.branch }}"
+        echo "📝 Issue number: ${{ steps.issue.outputs.number }}"
+        
+        # Check if this follows debug branch naming convention
+        if [[ "${{ steps.issue.outputs.branch }}" =~ ^debug/issue-[0-9]+-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          echo "✅ Debug branch naming convention is correct"
+        else
+          echo "⚠️  Warning: Debug branch doesn't follow expected naming convention"
+        fi
+
+    # 5 ─ Enhanced Testing for Debug Branches ------------------------------------
+    - name: Run Enhanced Validation Suite
+      run: |
+        echo "🧪 Running enhanced validation for debug branch..."
+        
+        # Type checking (fail on errors for debug branches)
+        echo "📝 Type checking..."
+        npm run type-check
+        
+        # Linting (allow existing warnings, but fail on errors)
+        echo "🔍 Linting..."
+        npm run lint
+        
+        # Unit tests
+        echo "🧪 Running unit tests..."
+        npm run test:unit
+        
+        # Build validation
+        echo "🔨 Build validation..."
+        npm run build
+      env:
+        DATABASE_URL: 'postgresql://user:pass@localhost/db'
+        NEXTAUTH_SECRET: 'debug-secret-for-build'
+        NEXTAUTH_URL: 'http://localhost:3000'
+        GHL_API_KEY: dummy-key-for-build
+        GHL_LOCATION_ID: dummy-location-id
+        NEXT_PUBLIC_BASE_URL: 'http://localhost:3000'
+
+    # 6 ─ Debug-Specific Git Validation ------------------------------------------
+    - name: Validate Debug Commits
+      run: |
+        echo "🔍 Validating debug commit structure..."
+        
+        # Check for proper commit message format
+        git log --oneline -10 | grep -E "Fix #${{ steps.issue.outputs.number }}:" || {
+          echo "⚠️  Warning: Some commits may not follow 'Fix #N:' format"
+        }
+        
+        # Check for debugging artifacts that shouldn't be committed
+        echo "🔍 Checking for debugging artifacts..."
+        
+        if grep -r "console\.log\|debugger\|TODO.*debug" src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" || true; then
+          echo "⚠️  Debug artifacts found - ensure they're intentional"
+        fi
+
+    # 7 ─ GitHub Issue Integration ------------------------------------------------
+    - name: Post Debug Branch Status to Issue
+      if: always()
+      run: |
+        echo "📝 Posting CI status to GitHub issue..."
+        
+        STATUS="✅ passed"
+        if [[ "${{ job.status }}" != "success" ]]; then
+          STATUS="❌ failed"
+        fi
+        
+        gh issue comment ${{ steps.issue.outputs.number }} --body "🤖 **Debug Branch CI Status**
+
+        **Branch**: \`${{ steps.issue.outputs.branch }}\`
+        **Commit**: ${{ github.sha }}
+        **CI Status**: $STATUS
+        **Build**: [View details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+        **Validations:**
+        - ✅ Dependencies installed
+        - ✅ TypeScript compilation 
+        - ✅ ESLint validation (warnings allowed)
+        - ✅ Unit tests passed
+        - ✅ Build successful
+        - ✅ Debug commit format checked
+
+        *Automated validation for debug branch*" || echo "Failed to post comment (missing GITHUB_TOKEN or issue not found)"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -102,8 +102,31 @@ export async function PUT(
       const changeNote = changes
         .map(change => {
           // Try to get a human-readable field name
-          const fieldName = FIELD_MAP[change.field] || change.field;
-          return `${fieldName}: "${change.oldValue || ''}" --> "${change.newValue || ''}"`;
+          let fieldName = FIELD_MAP[change.field] || change.field;
+          
+          // Convert internal field names to display names
+          const displayNames: Record<string, string> = {
+            'membership_payment_date': 'Membership Payment Date',
+            'membership_start_date': 'Membership Start Date',
+            'membership_type': 'Membership Type',
+            'single_or_double_membership': 'Single or Double Membership',
+            'renewal_date': 'Renewal Date',
+            'renewal_reminder': 'Renewal Reminder',
+            'marketing_email_consent': 'Marketing Email Consent',
+            'standing_order': 'Standing Order',
+            'gift_aid': 'Gift Aid',
+            'firstName': 'First Name',
+            'lastName': 'Last Name',
+            'membershipType': 'Membership Type',
+            'postalCode': 'Postcode',
+            'address1': 'Address 1',
+            'address2': 'Address 2',
+            'address3': 'Address 3'
+          };
+          
+          fieldName = displayNames[fieldName] || fieldName;
+          
+          return `${fieldName}: "${change.oldValue || ''}" → "${change.newValue || ''}"`;
         })
         .join('\n');
       

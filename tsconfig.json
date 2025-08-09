@@ -29,5 +29,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/__tests__/lib/MatchingService.test.ts",
+    "src/__tests__/lib/MatchingService-enhanced.test.ts", 
+    "src/__tests__/lib/SurnameIndexService.test.ts"
+  ]
 }

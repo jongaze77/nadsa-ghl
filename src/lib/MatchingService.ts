@@ -49,9 +49,10 @@ export class MatchingService {
   private readonly AMOUNT_WEIGHT = 0.2;
 
   private readonly membershipFees: Record<string, MembershipFeeRange> = {
-    'Full': { min: 60, max: 80 },
-    'Associate': { min: 40, max: 60 },
-    'Newsletter Only': { min: 10, max: 20 }
+    'Single': { min: 20, max: 20 },
+    'Double': { min: 30, max: 30 },
+    'Associate': { min: 10, max: 10 },
+    'Newsletter Only': { min: 0, max: 0 }
   };
 
   constructor() {}

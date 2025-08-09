@@ -566,10 +566,9 @@ export class ReconciliationService {
     warning?: string;
   } {
     const membershipFees = {
-      'Full': { min: 25, max: 35, typical: 30 },
-      'Associate': { min: 5, max: 15, typical: 10 },
-      'Single': { min: 15, max: 25, typical: 20 }, // Same as Full
-      'Double': { min: 25, max: 35, typical: 30 }, // Same as Full
+      'Single': { min: 20, max: 20, typical: 20 },
+      'Double': { min: 30, max: 30, typical: 30 },
+      'Associate': { min: 10, max: 10, typical: 10 },
       'Newsletter Only': { min: 0, max: 0, typical: 0 }
     };
     

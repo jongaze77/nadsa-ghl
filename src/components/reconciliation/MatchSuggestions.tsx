@@ -395,24 +395,35 @@ export default function MatchSuggestions({ selectedPayment, onMatchConfirmed }: 
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => confirmMatch(match)}
-                        disabled={state.confirmingMatch !== null}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                          state.confirmingMatch === match.contactId
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500'
-                        }`}
-                      >
-                        {state.confirmingMatch === match.contactId ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                            Confirming...
-                          </div>
-                        ) : (
-                          'Confirm Match'
-                        )}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const url = `/contact-review/${match.contactId}`;
+                            window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                          }}
+                          className="px-4 py-2 text-sm font-medium rounded-md transition-colors bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => confirmMatch(match)}
+                          disabled={state.confirmingMatch !== null}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                            state.confirmingMatch === match.contactId
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-green-600 text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500'
+                          }`}
+                        >
+                          {state.confirmingMatch === match.contactId ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                              Confirming...
+                            </div>
+                          ) : (
+                            'Confirm Match'
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Match Reasoning */}

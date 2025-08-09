@@ -2,6 +2,7 @@ import type { Contact } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchAllContactsFromGHL, mapGHLContactToPrisma } from './ghl-api';
 import type { ParsedPaymentData } from './CsvParsingService';
+import { SurnameIndexService, type SurnameSearchResult } from './SurnameIndexService';
 
 export interface MatchSuggestion {
   contact: Contact;
@@ -12,6 +13,7 @@ export interface MatchSuggestion {
       score: number;
       extractedName: string;
       matchedAgainst: string;
+      matchType?: 'exact' | 'surname_fuzzy' | 'forename_enhanced' | 'legacy';
     };
     emailMatch?: {
       score: number;
@@ -41,6 +43,8 @@ interface MembershipFeeRange {
 export class MatchingService {
   private contactsCache: Contact[] = [];
   private cacheExpiry: number = 0;
+  private surnameIndexService: SurnameIndexService = new SurnameIndexService();
+  private surnameIndexBuilt: boolean = false;
   private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   private readonly MIN_CONFIDENCE_THRESHOLD = 0.3;
   private readonly MAX_SUGGESTIONS = 5;
@@ -49,11 +53,11 @@ export class MatchingService {
   private readonly AMOUNT_WEIGHT = 0.2;
 
   private readonly membershipFees: Record<string, MembershipFeeRange> = {
-    'Single': { min: 20, max: 30 },
-    'Double': { min: 30, max: 40 },
-    'Associate': { min: 40, max: 60 },
-    'Newsletter Only': { min: 0, max: 5 },
-    'Full': { min: 60, max: 80 }
+    'Single': { min: 20, max: 20 },
+    'Double': { min: 30, max: 30 },
+    'Associate': { min: 10, max: 10 },
+    'Newsletter Only': { min: 0, max: 0 },
+    'Full': { min: 20, max: 30 }  // Full membership can be either Single (£20) or Double (£30)
   };
 
   constructor() {}
@@ -124,6 +128,9 @@ export class MatchingService {
       this.contactsCache = dbContacts;
       this.cacheExpiry = Date.now() + this.CACHE_DURATION_MS;
 
+      // Build surname index whenever contacts are refreshed
+      this.buildSurnameIndex();
+
       return this.contactsCache;
 
     } catch (error) {
@@ -134,11 +141,25 @@ export class MatchingService {
         const ghlContacts = ghlResponse.contacts || [];
         this.contactsCache = ghlContacts.map(mapGHLContactToPrisma).filter((contact: any) => contact.id);
         this.cacheExpiry = Date.now() + this.CACHE_DURATION_MS;
+        
+        // Build surname index for fallback contacts too
+        this.buildSurnameIndex();
+        
         return this.contactsCache;
       } catch (ghlError) {
         console.error('Error fetching contacts from GHL fallback:', ghlError);
         return [];
       }
+    }
+  }
+
+  /**
+   * Build surname index from current contacts cache
+   */
+  private buildSurnameIndex(): void {
+    if (this.contactsCache.length > 0) {
+      this.surnameIndexService.buildSurnameIndex(this.contactsCache);
+      this.surnameIndexBuilt = true;
     }
   }
 
@@ -198,6 +219,7 @@ export class MatchingService {
     let bestScore = 0;
     let bestExtracted = '';
     let bestMatched = '';
+    let matchType: 'exact' | 'surname_fuzzy' | 'forename_enhanced' | 'legacy' = 'legacy';
     
     // First, try to match using customer_name from Stripe data (highest priority)
     if (paymentData.customer_name) {
@@ -206,24 +228,123 @@ export class MatchingService {
         bestScore = customerNameScore.score;
         bestExtracted = paymentData.customer_name;
         bestMatched = customerNameScore.matchedAgainst;
+        matchType = customerNameScore.score === 1.0 ? 'exact' : 'legacy';
       }
     }
     
-    // Fall back to extracting names from description if no customer_name or low score
+    // Enhanced surname-based matching for Lloyds descriptions
+    if (paymentData.description && this.surnameIndexBuilt) {
+      const surnameMatch = this.matchUsingSurnameIndex(paymentData.description, contact);
+      if (surnameMatch.score > bestScore) {
+        bestScore = surnameMatch.score;
+        bestExtracted = surnameMatch.extractedName;
+        bestMatched = surnameMatch.matchedAgainst;
+        matchType = surnameMatch.matchType;
+      }
+    }
+    
+    // Fall back to extracting names from description if no better match found
     if (bestScore < 0.8 && paymentData.description) {
       const descriptionMatch = this.matchFromDescription(paymentData.description, contact);
       if (descriptionMatch.score > bestScore) {
         bestScore = descriptionMatch.score;
         bestExtracted = descriptionMatch.extractedName;
         bestMatched = descriptionMatch.matchedAgainst;
+        matchType = 'legacy';
       }
     }
     
     return {
       score: bestScore,
       extractedName: bestExtracted,
-      matchedAgainst: bestMatched
+      matchedAgainst: bestMatched,
+      matchType
     };
+  }
+
+  /**
+   * Enhanced surname-based matching using SurnameIndexService
+   */
+  private matchUsingSurnameIndex(description: string, contact: Contact): {
+    score: number;
+    extractedName: string;
+    matchedAgainst: string;
+    matchType: 'surname_fuzzy' | 'forename_enhanced';
+  } {
+    if (!this.surnameIndexBuilt) {
+      return {
+        score: 0,
+        extractedName: '',
+        matchedAgainst: '',
+        matchType: 'surname_fuzzy'
+      };
+    }
+
+    try {
+      // Search for surnames in the description
+      const surnameResults = this.surnameIndexService.searchSurnamesInDescription(description, 0.8);
+      
+      if (surnameResults.matches.length === 0) {
+        return {
+          score: 0,
+          extractedName: description,
+          matchedAgainst: '',
+          matchType: 'surname_fuzzy'
+        };
+      }
+
+      // Check if the current contact is in any of the surname matches
+      let contactSurnameMatch = null;
+      for (const match of surnameResults.matches) {
+        if (match.contacts.some(c => c.id === contact.id)) {
+          contactSurnameMatch = match;
+          break;
+        }
+      }
+
+      if (!contactSurnameMatch) {
+        return {
+          score: 0,
+          extractedName: description,
+          matchedAgainst: '',
+          matchType: 'surname_fuzzy'
+        };
+      }
+
+      // Try forename enhancement for higher confidence
+      const enhancedContacts = this.surnameIndexService.enhanceForenameMatching(
+        description, 
+        [contactSurnameMatch]
+      );
+
+      const isForenameEnhanced = enhancedContacts.some(c => c.id === contact.id);
+      
+      if (isForenameEnhanced) {
+        return {
+          score: 0.9, // High confidence for surname + forename match
+          extractedName: description,
+          matchedAgainst: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+          matchType: 'forename_enhanced'
+        };
+      }
+
+      // Surname-only match gets moderate confidence
+      return {
+        score: 0.7, // Moderate confidence for surname-only match
+        extractedName: description,
+        matchedAgainst: contact.lastName || contactSurnameMatch.normalizedSurname,
+        matchType: 'surname_fuzzy'
+      };
+
+    } catch (error) {
+      console.error('Error in surname index matching:', error);
+      return {
+        score: 0,
+        extractedName: description,
+        matchedAgainst: '',
+        matchType: 'surname_fuzzy'
+      };
+    }
   }
   
   private matchSingleName(providedName: string, contact: Contact) {
@@ -492,13 +613,32 @@ export class MatchingService {
   async refreshContactsCache(): Promise<void> {
     this.contactsCache = [];
     this.cacheExpiry = 0;
+    this.surnameIndexBuilt = false;
+    this.surnameIndexService.clearIndex();
     await this.getAvailableContacts();
   }
 
-  getCacheInfo(): { cached: number; expiresIn: number } {
+  getCacheInfo(): { 
+    cached: number; 
+    expiresIn: number;
+    surnameIndexStats?: {
+      totalSurnames: number;
+      totalContacts: number;
+      averageContactsPerSurname: number;
+      initialized: boolean;
+    };
+  } {
     return {
       cached: this.contactsCache.length,
-      expiresIn: Math.max(0, this.cacheExpiry - Date.now())
+      expiresIn: Math.max(0, this.cacheExpiry - Date.now()),
+      surnameIndexStats: this.surnameIndexBuilt ? this.surnameIndexService.getIndexStats() : undefined
     };
+  }
+
+  /**
+   * Get surname index service for testing/debugging
+   */
+  getSurnameIndexService(): SurnameIndexService {
+    return this.surnameIndexService;
   }
 }

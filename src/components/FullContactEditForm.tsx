@@ -3,8 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { FIELD_MAP } from "@/lib/ghl-api";
 
+// Field type definitions
+interface FieldDefinition {
+  key: string;
+  label: string;
+  type: "text" | "email" | "date" | "select" | "radio";
+  options?: string[];
+}
+
 // Field definitions
-const standardFields = [
+const standardFields: FieldDefinition[] = [
   { key: "firstName", label: "First Name", type: "text" },
   { key: "lastName", label: "Last Name", type: "text" },
   { key: "address1", label: "Address 1", type: "text" },
@@ -15,7 +23,7 @@ const standardFields = [
   { key: "source", label: "Contact Source", type: "text" },
 ];
 
-const customFields = [
+const customFields: FieldDefinition[] = [
   { key: "membership_start_date", label: "Membership Start Date", type: "date" },
   { key: "membership_type", label: "Membership Type", type: "select", options: ["Full", "Associate", "None", "Newsletter Only", "Ex Member"] },
   { key: "single_or_double_membership", label: "Single or Double Membership", type: "select", options: ["Single", "Double"] },
@@ -30,25 +38,25 @@ const customFields = [
 ];
 
 const fieldOrder = [
-  { key: "firstName", type: "standard" },
-  { key: "lastName", type: "standard" },
-  { key: "title", type: "custom" },
-  { key: "address1", type: "standard" },
-  { key: "address2", type: "custom" },
-  { key: "address3", type: "custom" },
-  { key: "city", type: "standard" },
-  { key: "postalCode", type: "standard" },
-  { key: "phone", type: "standard" },
-  { key: "email", type: "standard" },
-  { key: "source", type: "standard" },
-  { key: "membership_start_date", type: "custom" },
-  { key: "membership_type", type: "custom" },
-  { key: "single_or_double_membership", type: "custom" },
-  { key: "standing_order", type: "custom" },
-  { key: "renewal_date", type: "custom" },
-  { key: "renewal_reminder", type: "custom" },
-  { key: "marketing_email_consent", type: "custom" },
-  { key: "gift_aid", type: "custom" },
+  { key: "firstName", type: "standard", section: "Personal Details" },
+  { key: "lastName", type: "standard", section: "Personal Details" },
+  { key: "title", type: "custom", section: "Personal Details" },
+  { key: "address1", type: "standard", section: "Contact Information" },
+  { key: "address2", type: "custom", section: "Contact Information" },
+  { key: "address3", type: "custom", section: "Contact Information" },
+  { key: "city", type: "standard", section: "Contact Information" },
+  { key: "postalCode", type: "standard", section: "Contact Information" },
+  { key: "phone", type: "standard", section: "Contact Information" },
+  { key: "email", type: "standard", section: "Contact Information" },
+  { key: "source", type: "standard", section: "Contact Information" },
+  { key: "membership_start_date", type: "custom", section: "Membership Details" },
+  { key: "membership_type", type: "custom", section: "Membership Details" },
+  { key: "single_or_double_membership", type: "custom", section: "Membership Details" },
+  { key: "standing_order", type: "custom", section: "Membership Details" },
+  { key: "renewal_date", type: "custom", section: "Membership Details" },
+  { key: "renewal_reminder", type: "custom", section: "Membership Details" },
+  { key: "marketing_email_consent", type: "custom", section: "Preferences" },
+  { key: "gift_aid", type: "custom", section: "Preferences" },
 ];
 
 // Helper: flatten custom fields into editable form state
@@ -123,115 +131,154 @@ export default function FullContactEditForm({
     return payload;
   }
 
+  // Group fields by section
+  const sections = fieldOrder.reduce((acc, field) => {
+    if (!acc[field.section]) {
+      acc[field.section] = [];
+    }
+    acc[field.section].push(field);
+    return acc;
+  }, {} as Record<string, typeof fieldOrder>);
+
   return (
     <form
-      className="w-full max-w-2xl bg-gray-100 p-6 rounded-lg border-2 border-black mb-8"
-      style={{ fontSize: "1.25rem" }}
       onSubmit={e => {
         e.preventDefault();
         onSave(buildPayload(form));
       }}
+      className="p-6"
     >
-      <h2 className="text-2xl font-bold mb-4">Edit Contact Details</h2>
-      {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>
-      )}
-      {fieldOrder.map(field => {
-        if (field.type === "standard") {
-          const f = standardFields.find(sf => sf.key === field.key);
-          if (!f) return null;
-          return (
-            <div className="mb-4" key={f.key}>
-              <label className="block font-semibold mb-1" htmlFor={f.key}>
-                {f.label}
-              </label>
-              <input
-                id={f.key}
-                type={f.type}
-                className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                value={form[f.key] || ""}
-                onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                aria-label={f.label}
-                disabled={saving}
-              />
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Complete contact information with membership details
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Error</h3>
+                <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
+              </div>
             </div>
-          );
-        }
-        if (field.type === "custom") {
-          const f = customFields.find(cf => cf.key === field.key);
-          if (!f) return null;
-          return (
-            <div className="mb-4" key={f.key}>
-              <label className="block font-semibold mb-1" htmlFor={f.key}>
-                {f.label}
-              </label>
-              {f.type === "text" || f.type === "date" ? (
-                <input
-                  id={f.key}
-                  type={f.type}
-                  className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                  value={form[f.key] || ""}
-                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                  aria-label={f.label}
-                  disabled={saving}
-                />
-              ) : f.type === "select" ? (
-                <select
-                  id={f.key}
-                  className="w-full p-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-400"
-                  value={form[f.key] || ""}
-                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                  aria-label={f.label}
-                  disabled={saving}
-                >
-                  <option value="">-- Select --</option>
-                  {f.options?.map(opt => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : f.type === "radio" ? (
-                <div className="flex gap-6">
-                  {f.options?.map(opt => (
-                    <label key={opt} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={f.key}
-                        value={opt}
-                        checked={form[f.key] === opt}
-                        onChange={() => setForm({ ...form, [f.key]: opt })}
-                        aria-label={opt}
-                        disabled={saving}
-                      />
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              ) : null}
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {Object.entries(sections).map(([sectionName, sectionFields]) => (
+            <div key={sectionName} className="space-y-6">
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  {sectionName}
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {sectionFields.map(field => {
+                  const fieldDef = field.type === "standard" 
+                    ? standardFields.find(sf => sf.key === field.key)
+                    : customFields.find(cf => cf.key === field.key);
+
+                  if (!fieldDef) return null;
+
+                  const isFullWidth = ['source', 'address1', 'address2', 'address3'].includes(fieldDef.key);
+
+                  return (
+                    <div key={fieldDef.key} className={isFullWidth ? 'md:col-span-2' : ''}>
+                      <label htmlFor={fieldDef.key} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {fieldDef.label}
+                      </label>
+                      
+                      {fieldDef.type === "text" || fieldDef.type === "email" || fieldDef.type === "date" ? (
+                        <input
+                          id={fieldDef.key}
+                          type={fieldDef.type}
+                          value={form[fieldDef.key] || ""}
+                          onChange={e => setForm({ ...form, [fieldDef.key]: e.target.value })}
+                          disabled={saving}
+                          placeholder={fieldDef.type === "date" ? "" : `Enter ${fieldDef.label.toLowerCase()}`}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        />
+                      ) : fieldDef.type === "select" ? (
+                        <select
+                          id={fieldDef.key}
+                          value={form[fieldDef.key] || ""}
+                          onChange={e => setForm({ ...form, [fieldDef.key]: e.target.value })}
+                          disabled={saving}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <option value="">-- Select {fieldDef.label} --</option>
+                          {fieldDef.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : fieldDef.type === "radio" ? (
+                        <div className="flex gap-6">
+                          {fieldDef.options?.map((opt: string) => (
+                            <label key={opt} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={fieldDef.key}
+                                value={opt}
+                                checked={form[fieldDef.key] === opt}
+                                onChange={() => setForm({ ...form, [fieldDef.key]: opt })}
+                                disabled={saving}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          );
-        }
-        return null;
-      })}
-      <div className="mt-8 flex gap-4">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-        {onCancel && (
+          ))}
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Save Changes
+              </>
+            )}
+          </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50"
+            disabled={saving}
+            className="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-not-allowed"
           >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Cancel
           </button>
-        )}
-      </div>
+        </div>
     </form>
   );
 }

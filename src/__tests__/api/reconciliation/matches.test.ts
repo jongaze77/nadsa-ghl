@@ -43,7 +43,7 @@ describe('/api/reconciliation/matches', () => {
       confidence: 0.95,
       reasoning: {
         nameMatch: { score: 0.9, extractedName: 'JOHN SMITH', matchedAgainst: 'JOHN SMITH' },
-        amountMatch: { score: 1.0, expectedRange: '£60-80', actualAmount: 50 },
+        amountMatch: { score: 1.0, expectedRange: '£20-30', actualAmount: 25 },
       },
     }],
     totalMatches: 1,

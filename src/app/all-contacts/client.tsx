@@ -162,14 +162,35 @@ function EditContactModal({
   };
 
   if (loading) {
-    return <div className="p-6">Loading latest contact data…</div>;
+    return (
+      <div className="p-8 text-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400">Loading latest contact data...</p>
+        </div>
+      </div>
+    );
   }
   if (error) {
-    return <div className="p-6 text-red-700">Error: {error}</div>;
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Error loading contact</h3>
+              <p className="mt-1 text-sm text-red-700 dark:text-red-400">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-0">
       <FullContactEditForm
         contact={fullContact}
         saving={saving}
@@ -253,16 +274,6 @@ export default function ContactsClient() {
     return result;
   }, [contacts, search, selectedMembershipTypes, sort]);
 
-  // Table scroll: always show scrollbar above fold
-  const scrollContainerStyle: React.CSSProperties = {
-    overflowX: 'auto',
-    paddingBottom: 8,
-    marginBottom: 0,
-    WebkitOverflowScrolling: 'touch',
-  };
-  const tableStyle: React.CSSProperties = {
-    minWidth: 1000,
-  };
 
   function handleHeaderClick(column: string) {
     setSort(prev => {
@@ -294,16 +305,25 @@ export default function ContactsClient() {
     }, []);
   
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
         <div
-          className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-gray-200 dark:border-gray-700"
           onClick={e => e.stopPropagation()}
         >
-          <button
-            className="absolute top-2 right-2 text-2xl text-gray-400 hover:text-gray-600"
-            onClick={onClose}
-            aria-label="Close"
-          >&times;</button>
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-xl">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Edit Contact
+            </h2>
+            <button
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           {children}
         </div>
       </div>
@@ -322,106 +342,221 @@ export default function ContactsClient() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 flex flex-col items-center">
-      <div className="w-full max-w-6xl flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">All Contacts</h1>
-        
-        <Link
-          href="/contacts/new"
-          className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-400"
-        >
-          Add New Member
-        </Link>
-      </div>
-      <div className="w-full max-w-6xl mb-4 flex flex-wrap gap-4 items-end justify-between">
-        <div>
-          <MembershipTypeFilterPanel
-            selected={selectedMembershipTypes}
-            onChange={setSelectedMembershipTypes}
-          />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">All Contacts</h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Manage and view all contact information
+              </p>
+            </div>
+            
+            <Link
+              href="/contacts/new"
+              className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <span className="mr-2">+</span>
+              Add New Contact
+            </Link>
+          </div>
         </div>
-        <div className="relative flex items-center">
-  <input
-    type="text"
-    className="px-4 py-2 border rounded-lg pr-10"
-    placeholder="Search by name, email, or phone"
-    value={search}
-    onChange={e => setSearch(e.target.value)}
-  />
-  {search && (
-    <button
-      type="button"
-      aria-label="Clear search"
-      className="absolute right-2 text-gray-400 hover:text-gray-700 text-xl focus:outline-none"
-      onClick={() => setSearch('')}
-      tabIndex={0}
-    >
-      ×
-    </button>
-  )}
-</div>
-      </div>
-      <div style={scrollContainerStyle} className="w-full max-w-6xl border-t border-b border-gray-300 bg-white shadow">
-        {/* Always show horizontal scrollbar */}
-        <div style={{ overflowX: 'scroll', minHeight: 10 }}>
-          <table style={tableStyle} className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-100 sticky top-0 z-10">
-              <tr>
-                {COLUMNS.map(col => (
-                  <th
-                    key={col.key}
-                    onClick={() => handleHeaderClick(col.key)}
-                    className="px-4 py-2 text-left font-semibold cursor-pointer select-none whitespace-nowrap"
+
+        {/* Filters and Search Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <div className="flex-1">
+              <MembershipTypeFilterPanel
+                selected={selectedMembershipTypes}
+                onChange={setSelectedMembershipTypes}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  className="w-full sm:w-80 pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Search by name, email, or phone..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => setSearch('')}
                   >
-                    {col.label}
-                    {sort.column === col.key ? (
-                      <span className="ml-1">
-                        {sort.direction === 'asc' ? '▲' : '▼'}
-                      </span>
-                    ) : null}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Results count */}
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredContacts.length} contact{filteredContacts.length !== 1 ? 's' : ''}
+                {selectedMembershipTypes.length > 0 || search.trim() ? ' (filtered)' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <td colSpan={COLUMNS.length} className="text-center py-8">
-                    Loading...
-                  </td>
+                  {COLUMNS.map(col => (
+                    <th
+                      key={col.key}
+                      onClick={() => handleHeaderClick(col.key)}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors select-none"
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>{col.label}</span>
+                        {sort.column === col.key ? (
+                          <svg className={`w-4 h-4 transform ${sort.direction === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-gray-300 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
-              ) : filteredContacts.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="text-center py-8 text-gray-600">
-                    No contacts found.
-                  </td>
-                </tr>
-              ) : (
-                filteredContacts.map(contact => (
-                  <tr
-                    key={contact.id}
-                    className="hover:bg-blue-50 cursor-pointer"
-                    onClick={e => handleRowClick(contact, e)}
-                    tabIndex={0}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleRowClick(contact, e as any);
-                    }}
-                  >
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.lastName}>{truncate(contact.lastName)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.firstName}>{truncate(contact.firstName)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.email}>{truncate(contact.email)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.phone}>{truncate(contact.phone)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.address1}>{truncate(contact.address1)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.postalCode}>{truncate(contact.postalCode)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.membershipType}>{truncate(contact.membershipType)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap" title={contact.renewal_date}>{truncate(contact.renewal_date)}</td>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={COLUMNS.length} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-gray-500 dark:text-gray-400">Loading contacts...</p>
+                      </div>
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : filteredContacts.length === 0 ? (
+                  <tr>
+                    <td colSpan={COLUMNS.length} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                          No contacts found
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">
+                          {search.trim() || selectedMembershipTypes.length > 0 
+                            ? 'Try adjusting your filters or search terms.'
+                            : 'Get started by adding your first contact.'
+                          }
+                        </p>
+                        {(!search.trim() && selectedMembershipTypes.length === 0) && (
+                          <Link
+                            href="/contacts/new"
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                          >
+                            <span className="mr-2">+</span>
+                            Add First Contact
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredContacts.map((contact, index) => (
+                    <tr
+                      key={contact.id}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
+                        index % 2 === 0 ? '' : 'bg-gray-50/25 dark:bg-gray-700/25'
+                      }`}
+                      onClick={e => handleRowClick(contact, e)}
+                      tabIndex={0}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRowClick(contact, e as any);
+                      }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium" title={contact.lastName}>
+                        {truncate(contact.lastName)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.firstName}>
+                        {truncate(contact.firstName)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.email}>
+                        {contact.email ? (
+                          <a 
+                            href={`mailto:${contact.email}`} 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {truncate(contact.email)}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100" title={contact.phone}>
+                        {contact.phone ? (
+                          <a 
+                            href={`tel:${contact.phone}`} 
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {truncate(contact.phone)}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.address1}>
+                        {truncate(contact.address1) || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.postalCode}>
+                        {truncate(contact.postalCode) || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" title={contact.membershipType}>
+                        {contact.membershipType ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            {truncate(contact.membershipType)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" title={contact.renewal_date}>
+                        {contact.renewal_date ? truncate(contact.renewal_date) : <span className="text-gray-400">—</span>}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>
+            Tip: Click on a contact to edit, or Ctrl/Cmd+click to open in a new tab
+          </p>
         </div>
       </div>
+
       {/* Modal for inline edit */}
       {selectedContact && (
         <Modal onClose={() => setSelectedContact(null)}>
@@ -432,6 +567,6 @@ export default function ContactsClient() {
           />
         </Modal>
       )}
-    </main>
+    </div>
   );
 } 

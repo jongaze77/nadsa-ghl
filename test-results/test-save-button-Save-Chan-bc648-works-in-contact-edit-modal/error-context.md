@@ -1,0 +1,1662 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - link "nadsa Members Editor":
+    - /url: /all-contacts
+  - link "All Contacts":
+    - /url: /all-contacts
+  - link "Users":
+    - /url: /users
+  - link "Security":
+    - /url: /admin/security
+  - link "Reconciliation":
+    - /url: /admin/reconciliation
+  - text: admin
+  - button "Sign Out"
+- main:
+  - heading "All Contacts" [level=1]
+  - paragraph: Manage and view all contact information
+  - link "+ Add New Contact":
+    - /url: /contacts/new
+  - checkbox "Full Member"
+  - text: Full Member
+  - checkbox "Associate Member"
+  - text: Associate Member
+  - checkbox "Newsletter Only"
+  - text: Newsletter Only
+  - img
+  - textbox "Search by name, email, or phone..."
+  - text: 147 contacts
+  - table:
+    - rowgroup:
+      - row "Last Name First Name Email Phone Address Postcode Type Renewal Date":
+        - cell "Last Name":
+          - text: Last Name
+          - img
+        - cell "First Name":
+          - text: First Name
+          - img
+        - cell "Email":
+          - text: Email
+          - img
+        - cell "Phone":
+          - text: Phone
+          - img
+        - cell "Address":
+          - text: Address
+          - img
+        - cell "Postcode":
+          - text: Postcode
+          - img
+        - cell "Type":
+          - text: Type
+          - img
+        - cell "Renewal Date":
+          - text: Renewal Date
+          - img
+    - rowgroup:
+      - row "Recording 202504090902200000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504090902200000…":
+          - link "202504090902200000…":
+            - /url: mailto:2025040909022000003@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "dgtucker@easynet.c… — — — NL —":
+        - cell
+        - cell
+        - cell "dgtucker@easynet.c…":
+          - link "dgtucker@easynet.c…":
+            - /url: mailto:dgtucker@easynet.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "sheila.evans26@myp… — — — NL —":
+        - cell
+        - cell
+        - cell "sheila.evans26@myp…":
+          - link "sheila.evans26@myp…":
+            - /url: mailto:sheila.evans26@mypostoffice.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "jeffruss66@gmail.c… — — — NL —":
+        - cell
+        - cell
+        - cell "jeffruss66@gmail.c…":
+          - link "jeffruss66@gmail.c…":
+            - /url: mailto:jeffruss66@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "julie@martyn.cc — — — NL —":
+        - cell
+        - cell
+        - cell "julie@martyn.cc":
+          - link "julie@martyn.cc":
+            - /url: mailto:julie@martyn.cc
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "tthynne@tbgs.torba… — — — NL —":
+        - cell
+        - cell
+        - cell "tthynne@tbgs.torba…":
+          - link "tthynne@tbgs.torba…":
+            - /url: mailto:tthynne@tbgs.torbay.sch.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "n.keeling@btintern… — — — NL —":
+        - cell
+        - cell
+        - cell "n.keeling@btintern…":
+          - link "n.keeling@btintern…":
+            - /url: mailto:n.keeling@btinternet.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "clarke.ng1319@gmai… — — — NL —":
+        - cell
+        - cell
+        - cell "clarke.ng1319@gmai…":
+          - link "clarke.ng1319@gmai…":
+            - /url: mailto:clarke.ng1319@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "geo_thos@yahoo.co.… — — — NL —":
+        - cell
+        - cell
+        - cell "geo_thos@yahoo.co.…":
+          - link "geo_thos@yahoo.co.…":
+            - /url: mailto:geo_thos@yahoo.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "iain.mcdonald@mans… — — — NL —":
+        - cell
+        - cell
+        - cell "iain.mcdonald@mans…":
+          - link "iain.mcdonald@mans…":
+            - /url: mailto:iain.mcdonald@mansfield.oxon.org
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "kpamorris@yahoo.co… — — — NL —":
+        - cell
+        - cell
+        - cell "kpamorris@yahoo.co…":
+          - link "kpamorris@yahoo.co…":
+            - /url: mailto:kpamorris@yahoo.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "rosmason@hotmail.c… — — — NL —":
+        - cell
+        - cell
+        - cell "rosmason@hotmail.c…":
+          - link "rosmason@hotmail.c…":
+            - /url: mailto:rosmason@hotmail.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "michele.hamer@park… — — — NL —":
+        - cell
+        - cell
+        - cell "michele.hamer@park…":
+          - link "michele.hamer@park…":
+            - /url: mailto:michele.hamer@parkchase.net
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "bellehelen@live.co… — — — NL —":
+        - cell
+        - cell
+        - cell "bellehelen@live.co…":
+          - link "bellehelen@live.co…":
+            - /url: mailto:bellehelen@live.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "onetwothreehop@gma… — — — NL —":
+        - cell
+        - cell
+        - cell "onetwothreehop@gma…":
+          - link "onetwothreehop@gma…":
+            - /url: mailto:onetwothreehop@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "gandkcollins@btint… — — — NL —":
+        - cell
+        - cell
+        - cell "gandkcollins@btint…":
+          - link "gandkcollins@btint…":
+            - /url: mailto:gandkcollins@btinternet.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "davkalisch@aol.com — — — NL —":
+        - cell
+        - cell
+        - cell "davkalisch@aol.com":
+          - link "davkalisch@aol.com":
+            - /url: mailto:davkalisch@aol.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "e_j_coxon@hotmail.… — — — NL —":
+        - cell
+        - cell
+        - cell "e_j_coxon@hotmail.…":
+          - link "e_j_coxon@hotmail.…":
+            - /url: mailto:e_j_coxon@hotmail.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "ejbnotifications@g… — — — NL —":
+        - cell
+        - cell
+        - cell "ejbnotifications@g…":
+          - link "ejbnotifications@g…":
+            - /url: mailto:ejbnotifications@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Stripe notifications@stri… — — — — —":
+        - cell
+        - cell "Stripe"
+        - cell "notifications@stri…":
+          - link "notifications@stri…":
+            - /url: mailto:notifications@stripe.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202504091533200000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504091533200000…":
+          - link "202504091533200000…":
+            - /url: mailto:2025040915332000005@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202504110945070000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504110945070000…":
+          - link "202504110945070000…":
+            - /url: mailto:2025041109450700009@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202504111220540000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504111220540000…":
+          - link "202504111220540000…":
+            - /url: mailto:2025041112205400004@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202504111657100000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504111657100000…":
+          - link "202504111657100000…":
+            - /url: mailto:2025041116571000002@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202504121213510000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202504121213510000…":
+          - link "202504121213510000…":
+            - /url: mailto:2025041212135100000@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Google no-reply@accounts.… — — — — —":
+        - cell
+        - cell "Google"
+        - cell "no-reply@accounts.…":
+          - link "no-reply@accounts.…":
+            - /url: mailto:no-reply@accounts.google.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Rowena rowena.nicholson@m… — — — NL —":
+        - cell
+        - cell "Rowena"
+        - cell "rowena.nicholson@m…":
+          - link "rowena.nicholson@m…":
+            - /url: mailto:rowena.nicholson@me.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Recording 202507281232510000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202507281232510000…":
+          - link "202507281232510000…":
+            - /url: mailto:2025072812325100002@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Recording 202507301116360000… — — — — —":
+        - cell
+        - cell "Recording"
+        - cell "202507301116360000…":
+          - link "202507301116360000…":
+            - /url: mailto:2025073011163600000@recordings.aa.net.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "🐰 bunny.net no-reply@bunny.net — — — — —":
+        - cell "🐰"
+        - cell "bunny.net"
+        - cell "no-reply@bunny.net":
+          - link "no-reply@bunny.net":
+            - /url: mailto:no-reply@bunny.net
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Abbot and District… Newton boxoffice@nadsa.co… — — — — —":
+        - cell "Abbot and District…"
+        - cell "Newton"
+        - cell "boxoffice@nadsa.co…":
+          - link "boxoffice@nadsa.co…":
+            - /url: mailto:boxoffice@nadsa.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Ash E unknown2@example.c… — — — — —":
+        - cell "Ash"
+        - cell "E"
+        - cell "unknown2@example.c…":
+          - link "unknown2@example.c…":
+            - /url: mailto:unknown2@example.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Atkins Linda linda_atkins@outlo… — Bracken TQ12 4EA F 2026-01-05":
+        - cell "Atkins"
+        - cell "Linda"
+        - cell "linda_atkins@outlo…":
+          - link "linda_atkins@outlo…":
+            - /url: mailto:linda_atkins@outlook.com
+        - cell "—"
+        - cell "Bracken"
+        - cell "TQ12 4EA"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Aust Derek aust@eclipse.co.uk — Pencarrow TQ1 4DH F 2026-07-03":
+        - cell "Aust"
+        - cell "Derek"
+        - cell "aust@eclipse.co.uk":
+          - link "aust@eclipse.co.uk":
+            - /url: mailto:aust@eclipse.co.uk
+        - cell "—"
+        - cell "Pencarrow"
+        - cell "TQ1 4DH"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Austin David austinato7@gmail.c… — 33 Church Terrace EX2 5DV A —":
+        - cell "Austin"
+        - cell "David"
+        - cell "austinato7@gmail.c…":
+          - link "austinato7@gmail.c…":
+            - /url: mailto:austinato7@gmail.com
+        - cell "—"
+        - cell "33 Church Terrace"
+        - cell "EX2 5DV"
+        - cell "A"
+        - cell "—"
+      - row "Badman Keith keirba@gmail.com — 9 Bouchers Hill EX20 2DG F 2026-01-05":
+        - cell "Badman"
+        - cell "Keith"
+        - cell "keirba@gmail.com":
+          - link "keirba@gmail.com":
+            - /url: mailto:keirba@gmail.com
+        - cell "—"
+        - cell "9 Bouchers Hill"
+        - cell "EX20 2DG"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Beale Peter beale@eclipse.co.u… — 22 Frobisher Road TQ12 4HT F —":
+        - cell "Beale"
+        - cell "Peter"
+        - cell "beale@eclipse.co.u…":
+          - link "beale@eclipse.co.u…":
+            - /url: mailto:beale@eclipse.co.uk
+        - cell "—"
+        - cell "22 Frobisher Road"
+        - cell "TQ12 4HT"
+        - cell "F"
+        - cell "—"
+      - row "Bennett Doreen dorrose42@gmail.co… +447974648519 3 Milton Court TQ12 1ET F 2026-07-30":
+        - cell "Bennett"
+        - cell "Doreen"
+        - cell "dorrose42@gmail.co…":
+          - link "dorrose42@gmail.co…":
+            - /url: mailto:dorrose42@gmail.com
+        - cell "+447974648519":
+          - link "+447974648519":
+            - /url: tel:+447974648519
+        - cell "3 Milton Court"
+        - cell "TQ12 1ET"
+        - cell "F"
+        - cell "2026-07-30"
+      - row "Blackwell Albert alberblackwell@aol… — 2 Beanhay Close TQ12 6YY F 2026-07-03":
+        - cell "Blackwell"
+        - cell "Albert"
+        - cell "alberblackwell@aol…":
+          - link "alberblackwell@aol…":
+            - /url: mailto:alberblackwell@aol.com
+        - cell "—"
+        - cell "2 Beanhay Close"
+        - cell "TQ12 6YY"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Brooks-Daw Anthony brooksdaw_arch@hot… — 16 Devon Square TQ12 2HR F 2025-03-12":
+        - cell "Brooks-Daw"
+        - cell "Anthony"
+        - cell "brooksdaw_arch@hot…":
+          - link "brooksdaw_arch@hot…":
+            - /url: mailto:brooksdaw_arch@hotmail.com
+        - cell "—"
+        - cell "16 Devon Square"
+        - cell "TQ12 2HR"
+        - cell "F"
+        - cell "2025-03-12"
+      - row "Broom S — — 10 St John's Close TQ13 9BU — —":
+        - cell "Broom"
+        - cell "S"
+        - cell "—"
+        - cell "—"
+        - cell "10 St John's Close"
+        - cell "TQ13 9BU"
+        - cell "—"
+        - cell "—"
+      - row "Brothwood Lucy lucydb@btinternet.… — 7 Marriott Way TQ13 9RZ F 2025-10-08":
+        - cell "Brothwood"
+        - cell "Lucy"
+        - cell "lucydb@btinternet.…":
+          - link "lucydb@btinternet.…":
+            - /url: mailto:lucydb@btinternet.com
+        - cell "—"
+        - cell "7 Marriott Way"
+        - cell "TQ13 9RZ"
+        - cell "F"
+        - cell "2025-10-08"
+      - row "Brown Michael alisonbrown357@gma… — Mulberry TQ13 9EX F 2025-08-09":
+        - cell "Brown"
+        - cell "Michael"
+        - cell "alisonbrown357@gma…":
+          - link "alisonbrown357@gma…":
+            - /url: mailto:alisonbrown357@gmail.com
+        - cell "—"
+        - cell "Mulberry"
+        - cell "TQ13 9EX"
+        - cell "F"
+        - cell "2025-08-09"
+      - row "Butler Rebecca becbutler@hotmail.… — 84 Torquay Road TQ12 2HY NL —":
+        - cell "Butler"
+        - cell "Rebecca"
+        - cell "becbutler@hotmail.…":
+          - link "becbutler@hotmail.…":
+            - /url: mailto:becbutler@hotmail.com
+        - cell "—"
+        - cell "84 Torquay Road"
+        - cell "TQ12 2HY"
+        - cell "NL"
+        - cell "—"
+      - row "Chambers Richard richardchambers194… — Meadow Grange EX6 7UG F —":
+        - cell "Chambers"
+        - cell "Richard"
+        - cell "richardchambers194…":
+          - link "richardchambers194…":
+            - /url: mailto:richardchambers1944@btinternet.com
+        - cell "—"
+        - cell "Meadow Grange"
+        - cell "EX6 7UG"
+        - cell "F"
+        - cell "—"
+      - row "Clarke Nolan — — 2 Sadler Green TQ13 9AY N —":
+        - cell "Clarke"
+        - cell "Nolan"
+        - cell "—"
+        - cell "—"
+        - cell "2 Sadler Green"
+        - cell "TQ13 9AY"
+        - cell "N"
+        - cell "—"
+      - row "Cochrane Douglas dougcochrane65@gma… — 23 Coombe Close TQ13 9ER F 2025-08-16":
+        - cell "Cochrane"
+        - cell "Douglas"
+        - cell "dougcochrane65@gma…":
+          - link "dougcochrane65@gma…":
+            - /url: mailto:dougcochrane65@gmail.com
+        - cell "—"
+        - cell "23 Coombe Close"
+        - cell "TQ13 9ER"
+        - cell "F"
+        - cell "2025-08-16"
+      - row "Cocks June junecocks4@gmail.c… — 45a Beverley Garde… TQ13 7BL F 2026-07-03":
+        - cell "Cocks"
+        - cell "June"
+        - cell "junecocks4@gmail.c…":
+          - link "junecocks4@gmail.c…":
+            - /url: mailto:junecocks4@gmail.com
+        - cell "—"
+        - cell "45a Beverley Garde…"
+        - cell "TQ13 7BL"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Collman Jeffrey jrcollman@yahoo.co… — 21 Beechwood Avenu… TQ12 4LJ F 2026-07-03":
+        - cell "Collman"
+        - cell "Jeffrey"
+        - cell "jrcollman@yahoo.co…":
+          - link "jrcollman@yahoo.co…":
+            - /url: mailto:jrcollman@yahoo.co.uk
+        - cell "—"
+        - cell "21 Beechwood Avenu…"
+        - cell "TQ12 4LJ"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Collman Sue susancollman21@gma… — — — NL —":
+        - cell "Collman"
+        - cell "Sue"
+        - cell "susancollman21@gma…":
+          - link "susancollman21@gma…":
+            - /url: mailto:susancollman21@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Cooke Susanne susannecooke@zen.c… — — — NL —":
+        - cell "Cooke"
+        - cell "Susanne"
+        - cell "susannecooke@zen.c…":
+          - link "susannecooke@zen.c…":
+            - /url: mailto:susannecooke@zen.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Cooper Dale cooper_dj@hotmail.… — — — NL —":
+        - cell "Cooper"
+        - cell "Dale"
+        - cell "cooper_dj@hotmail.…":
+          - link "cooper_dj@hotmail.…":
+            - /url: mailto:cooper_dj@hotmail.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Coram Robert robertcoram2011@gm… — 20 Eton Walk EX4 1FD A 2026-02-06":
+        - cell "Coram"
+        - cell "Robert"
+        - cell "robertcoram2011@gm…":
+          - link "robertcoram2011@gm…":
+            - /url: mailto:robertcoram2011@gmail.com
+        - cell "—"
+        - cell "20 Eton Walk"
+        - cell "EX4 1FD"
+        - cell "A"
+        - cell "2026-02-06"
+      - row "Crawford Michael michael.bone.crawf… — Haldon House TQ14 9TF F 2026-07-03":
+        - cell "Crawford"
+        - cell "Michael"
+        - cell "michael.bone.crawf…":
+          - link "michael.bone.crawf…":
+            - /url: mailto:michael.bone.crawford@gmail.com
+        - cell "—"
+        - cell "Haldon House"
+        - cell "TQ14 9TF"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Cunningham T firstaider@me.com — Flat 1, Torvesco H… TQ12 2PW — —":
+        - cell "Cunningham"
+        - cell "T"
+        - cell "firstaider@me.com":
+          - link "firstaider@me.com":
+            - /url: mailto:firstaider@me.com
+        - cell "—"
+        - cell "Flat 1, Torvesco H…"
+        - cell "TQ12 2PW"
+        - cell "—"
+        - cell "—"
+      - row "Davis Christine chrakastava@gmail.… — 17 Beechwood Avenu… TQ12 4LJ F 2026-01-05":
+        - cell "Davis"
+        - cell "Christine"
+        - cell "chrakastava@gmail.…":
+          - link "chrakastava@gmail.…":
+            - /url: mailto:chrakastava@gmail.com
+        - cell "—"
+        - cell "17 Beechwood Avenu…"
+        - cell "TQ12 4LJ"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Day David david_w_day@hotmai… — Roborough House TQ1 3JG F 2026-02-06":
+        - cell "Day"
+        - cell "David"
+        - cell "david_w_day@hotmai…":
+          - link "david_w_day@hotmai…":
+            - /url: mailto:david_w_day@hotmail.co.uk
+        - cell "—"
+        - cell "Roborough House"
+        - cell "TQ1 3JG"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Edge Sylvia sylvia.edge@uwclub… — Flat 5 TQ14 8SY F 2026-07-03":
+        - cell "Edge"
+        - cell "Sylvia"
+        - cell "sylvia.edge@uwclub…":
+          - link "sylvia.edge@uwclub…":
+            - /url: mailto:sylvia.edge@uwclub.net
+        - cell "—"
+        - cell "Flat 5"
+        - cell "TQ14 8SY"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Edwards Jackie jackie.edwards.uk@… — 114 Exeter Road TQ12 3LY N 2025-03-07":
+        - cell "Edwards"
+        - cell "Jackie"
+        - cell "jackie.edwards.uk@…":
+          - link "jackie.edwards.uk@…":
+            - /url: mailto:jackie.edwards.uk@gmail.com
+        - cell "—"
+        - cell "114 Exeter Road"
+        - cell "TQ12 3LY"
+        - cell "N"
+        - cell "2025-03-07"
+      - row "Ferguson James fergusonjandw@outl… — Home Orchard TQ13 9LE F 2026-07-03":
+        - cell "Ferguson"
+        - cell "James"
+        - cell "fergusonjandw@outl…":
+          - link "fergusonjandw@outl…":
+            - /url: mailto:fergusonjandw@outlook.com
+        - cell "—"
+        - cell "Home Orchard"
+        - cell "TQ13 9LE"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Fergusson Loveday lovedayfergusson@g… — 2 Mallands Meadow TQ12 5NL F 2026-07-03":
+        - cell "Fergusson"
+        - cell "Loveday"
+        - cell "lovedayfergusson@g…":
+          - link "lovedayfergusson@g…":
+            - /url: mailto:lovedayfergusson@gmail.com
+        - cell "—"
+        - cell "2 Mallands Meadow"
+        - cell "TQ12 5NL"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Firrell Rosemary rffirrell@gmail.co… — 9 Coombe Close TQ13 9ER F 2025-08-16":
+        - cell "Firrell"
+        - cell "Rosemary"
+        - cell "rffirrell@gmail.co…":
+          - link "rffirrell@gmail.co…":
+            - /url: mailto:rffirrell@gmail.com
+        - cell "—"
+        - cell "9 Coombe Close"
+        - cell "TQ13 9ER"
+        - cell "F"
+        - cell "2025-08-16"
+      - row "Foulkes Elizabeth tednlizzy@gmail.co… — 34 Barnpark Road TQ14 8PN F 2026-01-05":
+        - cell "Foulkes"
+        - cell "Elizabeth"
+        - cell "tednlizzy@gmail.co…":
+          - link "tednlizzy@gmail.co…":
+            - /url: mailto:tednlizzy@gmail.com
+        - cell "—"
+        - cell "34 Barnpark Road"
+        - cell "TQ14 8PN"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Frampton Don sandynap36@gmail.c… — 3 Keyberry Park TQ12 1BZ F 2026-02-06":
+        - cell "Frampton"
+        - cell "Don"
+        - cell "sandynap36@gmail.c…":
+          - link "sandynap36@gmail.c…":
+            - /url: mailto:sandynap36@gmail.com
+        - cell "—"
+        - cell "3 Keyberry Park"
+        - cell "TQ12 1BZ"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Gandy Susan — — 28 Mount Pleasant … TQ12 1AS F 2026-02-06":
+        - cell "Gandy"
+        - cell "Susan"
+        - cell "—"
+        - cell "—"
+        - cell "28 Mount Pleasant …"
+        - cell "TQ12 1AS"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Gaze Jonathan jongaze@gmail.com +447841464064 Pilgrims TQ13 0DR NL —":
+        - cell "Gaze"
+        - cell "Jonathan"
+        - cell "jongaze@gmail.com":
+          - link "jongaze@gmail.com":
+            - /url: mailto:jongaze@gmail.com
+        - cell "+447841464064":
+          - link "+447841464064":
+            - /url: tel:+447841464064
+        - cell "Pilgrims"
+        - cell "TQ13 0DR"
+        - cell "NL"
+        - cell "—"
+      - row "Gaze Valerie valeriegaze@yahoo.… — Pilgrims TQ13 0DR F —":
+        - cell "Gaze"
+        - cell "Valerie"
+        - cell "valeriegaze@yahoo.…":
+          - link "valeriegaze@yahoo.…":
+            - /url: mailto:valeriegaze@yahoo.co.uk
+        - cell "—"
+        - cell "Pilgrims"
+        - cell "TQ13 0DR"
+        - cell "F"
+        - cell "—"
+      - row "Gfeller-Harwood Monika monikagfeller@tisc… — 1 Lower Trindle Cl… TQ13 0FA F 2026-01-05":
+        - cell "Gfeller-Harwood"
+        - cell "Monika"
+        - cell "monikagfeller@tisc…":
+          - link "monikagfeller@tisc…":
+            - /url: mailto:monikagfeller@tiscali.co.uk
+        - cell "—"
+        - cell "1 Lower Trindle Cl…"
+        - cell "TQ13 0FA"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Gibbs George georgegibbs-ex@nad… — — — EX —":
+        - cell "Gibbs"
+        - cell "George"
+        - cell "georgegibbs-ex@nad…":
+          - link "georgegibbs-ex@nad…":
+            - /url: mailto:georgegibbs-ex@nadsa.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "EX"
+        - cell "—"
+      - row "Gibbs M miriam.gibbs@sky.c… — 6 Cleaveland Rise TQ12 6FF N —":
+        - cell "Gibbs"
+        - cell "M"
+        - cell "miriam.gibbs@sky.c…":
+          - link "miriam.gibbs@sky.c…":
+            - /url: mailto:miriam.gibbs@sky.com
+        - cell "—"
+        - cell "6 Cleaveland Rise"
+        - cell "TQ12 6FF"
+        - cell "N"
+        - cell "—"
+      - row "Google Workspace T… The workspace-noreply@… — — — — —":
+        - cell "Google Workspace T…"
+        - cell "The"
+        - cell "workspace-noreply@…":
+          - link "workspace-noreply@…":
+            - /url: mailto:workspace-noreply@google.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Goolding David david.goolding@vir… — 48 Bushmead Avenue TQ12 5EP N —":
+        - cell "Goolding"
+        - cell "David"
+        - cell "david.goolding@vir…":
+          - link "david.goolding@vir…":
+            - /url: mailto:david.goolding@virginmedia.com
+        - cell "—"
+        - cell "48 Bushmead Avenue"
+        - cell "TQ12 5EP"
+        - cell "N"
+        - cell "—"
+      - row "Gray Elaine — — The Coach House TQ1 4NS F 2026-07-03":
+        - cell "Gray"
+        - cell "Elaine"
+        - cell "—"
+        - cell "—"
+        - cell "The Coach House"
+        - cell "TQ1 4NS"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Gregory Raymond — — 5 Sunny Hollow TQ12 6AW A 2026-02-06":
+        - cell "Gregory"
+        - cell "Raymond"
+        - cell "—"
+        - cell "—"
+        - cell "5 Sunny Hollow"
+        - cell "TQ12 6AW"
+        - cell "A"
+        - cell "2026-02-06"
+      - row "Groves Lyndon lyngroves@onetel.c… — 107a Ilsham Road TQ1 2JD F —":
+        - cell "Groves"
+        - cell "Lyndon"
+        - cell "lyngroves@onetel.c…":
+          - link "lyngroves@onetel.c…":
+            - /url: mailto:lyngroves@onetel.com
+        - cell "—"
+        - cell "107a Ilsham Road"
+        - cell "TQ1 2JD"
+        - cell "F"
+        - cell "—"
+      - row "Hall Chris chrisr.hall@hotmai… — The Firs TQ12 4QS F 2026-07-03":
+        - cell "Hall"
+        - cell "Chris"
+        - cell "chrisr.hall@hotmai…":
+          - link "chrisr.hall@hotmai…":
+            - /url: mailto:chrisr.hall@hotmail.co.uk
+        - cell "—"
+        - cell "The Firs"
+        - cell "TQ12 4QS"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Harrison David davidharrison123@b… — High Orchard TQ14 8TN A —":
+        - cell "Harrison"
+        - cell "David"
+        - cell "davidharrison123@b…":
+          - link "davidharrison123@b…":
+            - /url: mailto:davidharrison123@btinternet.com
+        - cell "—"
+        - cell "High Orchard"
+        - cell "TQ14 8TN"
+        - cell "A"
+        - cell "—"
+      - row "Havemann Joan joanhavemann@gmail… — Hide Hollow TQ14 0HH F —":
+        - cell "Havemann"
+        - cell "Joan"
+        - cell "joanhavemann@gmail…":
+          - link "joanhavemann@gmail…":
+            - /url: mailto:joanhavemann@gmail.com
+        - cell "—"
+        - cell "Hide Hollow"
+        - cell "TQ14 0HH"
+        - cell "F"
+        - cell "—"
+      - row "Hawes Chris chris.d.hawes@btin… — 16 Broadgate Cresc… TQ12 5EB F 2026-01-05":
+        - cell "Hawes"
+        - cell "Chris"
+        - cell "chris.d.hawes@btin…":
+          - link "chris.d.hawes@btin…":
+            - /url: mailto:chris.d.hawes@btinternet.com
+        - cell "—"
+        - cell "16 Broadgate Cresc…"
+        - cell "TQ12 5EB"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Hewitt Nigel nigel@penhayes.ecl… — 16 Penhayes Road EX6 8NR F 2026-02-06":
+        - cell "Hewitt"
+        - cell "Nigel"
+        - cell "nigel@penhayes.ecl…":
+          - link "nigel@penhayes.ecl…":
+            - /url: mailto:nigel@penhayes.eclipse.co.uk
+        - cell "—"
+        - cell "16 Penhayes Road"
+        - cell "EX6 8NR"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Hocking Michael mike.hocking1@sky.… — 19 Berrys Wood TQ12 1UP F 2025-09-09":
+        - cell "Hocking"
+        - cell "Michael"
+        - cell "mike.hocking1@sky.…":
+          - link "mike.hocking1@sky.…":
+            - /url: mailto:mike.hocking1@sky.com
+        - cell "—"
+        - cell "19 Berrys Wood"
+        - cell "TQ12 1UP"
+        - cell "F"
+        - cell "2025-09-09"
+      - row "Hughes G gwynhughes@icloud.… — Paddocks TQ12 6BH — —":
+        - cell "Hughes"
+        - cell "G"
+        - cell "gwynhughes@icloud.…":
+          - link "gwynhughes@icloud.…":
+            - /url: mailto:gwynhughes@icloud.com
+        - cell "—"
+        - cell "Paddocks"
+        - cell "TQ12 6BH"
+        - cell "—"
+        - cell "—"
+      - row "Humphreys Dennis lizanden@btinterne… — Fordlands TQ12 1DB F 2025-09-01":
+        - cell "Humphreys"
+        - cell "Dennis"
+        - cell "lizanden@btinterne…":
+          - link "lizanden@btinterne…":
+            - /url: mailto:lizanden@btinternet.com
+        - cell "—"
+        - cell "Fordlands"
+        - cell "TQ12 1DB"
+        - cell "F"
+        - cell "2025-09-01"
+      - row "Jones Alice alicejones259@btin… +447548260865 4 MacAndrew Walk PL21 0EY F 2025-09-15":
+        - cell "Jones"
+        - cell "Alice"
+        - cell "alicejones259@btin…":
+          - link "alicejones259@btin…":
+            - /url: mailto:alicejones259@btinternet.com
+        - cell "+447548260865":
+          - link "+447548260865":
+            - /url: tel:+447548260865
+        - cell "4 MacAndrew Walk"
+        - cell "PL21 0EY"
+        - cell "F"
+        - cell "2025-09-15"
+      - row "Kingston Hilary kingston.hilary@gm… — 13 Fourth Avenue TQ14 9DS F 2026-01-05":
+        - cell "Kingston"
+        - cell "Hilary"
+        - cell "kingston.hilary@gm…":
+          - link "kingston.hilary@gm…":
+            - /url: mailto:kingston.hilary@gmail.com
+        - cell "—"
+        - cell "13 Fourth Avenue"
+        - cell "TQ14 9DS"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Kittow P — — Manor Croft TQ9 6BD N —":
+        - cell "Kittow"
+        - cell "P"
+        - cell "—"
+        - cell "—"
+        - cell "Manor Croft"
+        - cell "TQ9 6BD"
+        - cell "N"
+        - cell "—"
+      - row "Langford Hazel frogman94devon@gmx… — 94 Marldon Road TQ3 3NW F 2026-01-05":
+        - cell "Langford"
+        - cell "Hazel"
+        - cell "frogman94devon@gmx…":
+          - link "frogman94devon@gmx…":
+            - /url: mailto:frogman94devon@gmx.co.uk
+        - cell "—"
+        - cell "94 Marldon Road"
+        - cell "TQ3 3NW"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Laurie Veronica — — Furzeacre TQ13 9LL F —":
+        - cell "Laurie"
+        - cell "Veronica"
+        - cell "—"
+        - cell "—"
+        - cell "Furzeacre"
+        - cell "TQ13 9LL"
+        - cell "F"
+        - cell "—"
+      - row "Lee N unknown3@example.c… — — — — —":
+        - cell "Lee"
+        - cell "N"
+        - cell "unknown3@example.c…":
+          - link "unknown3@example.c…":
+            - /url: mailto:unknown3@example.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Leer Ineke ineke.leer@googlem… — 6 Dart Bridge Road TQ11 0DY F 2026-01-05":
+        - cell "Leer"
+        - cell "Ineke"
+        - cell "ineke.leer@googlem…":
+          - link "ineke.leer@googlem…":
+            - /url: mailto:ineke.leer@googlemail.com
+        - cell "—"
+        - cell "6 Dart Bridge Road"
+        - cell "TQ11 0DY"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Lewis Diana dianatheartist@yah… — 1 Westwood Road TQ12 6YB F 2025-05-01":
+        - cell "Lewis"
+        - cell "Diana"
+        - cell "dianatheartist@yah…":
+          - link "dianatheartist@yah…":
+            - /url: mailto:dianatheartist@yahoo.com
+        - cell "—"
+        - cell "1 Westwood Road"
+        - cell "TQ12 6YB"
+        - cell "F"
+        - cell "2025-05-01"
+      - row "Ley Ann annraeley@gmail.co… — Beeches TQ10 9QF F 2026-01-05":
+        - cell "Ley"
+        - cell "Ann"
+        - cell "annraeley@gmail.co…":
+          - link "annraeley@gmail.co…":
+            - /url: mailto:annraeley@gmail.com
+        - cell "—"
+        - cell "Beeches"
+        - cell "TQ10 9QF"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "long clive drclivelong@gmail.… — — — NL —":
+        - cell "long"
+        - cell "clive"
+        - cell "drclivelong@gmail.…":
+          - link "drclivelong@gmail.…":
+            - /url: mailto:drclivelong@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Lowe Peter peterlowe55@gmail.… — Longfield TQ12 3DJ F 2026-07-03":
+        - cell "Lowe"
+        - cell "Peter"
+        - cell "peterlowe55@gmail.…":
+          - link "peterlowe55@gmail.…":
+            - /url: mailto:peterlowe55@gmail.com
+        - cell "—"
+        - cell "Longfield"
+        - cell "TQ12 3DJ"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Mackenzie Patricia pathavmac@gmail.co… — 1 The Priory TQ12 5PP N —":
+        - cell "Mackenzie"
+        - cell "Patricia"
+        - cell "pathavmac@gmail.co…":
+          - link "pathavmac@gmail.co…":
+            - /url: mailto:pathavmac@gmail.com
+        - cell "—"
+        - cell "1 The Priory"
+        - cell "TQ12 5PP"
+        - cell "N"
+        - cell "—"
+      - row "Marshall Christine chrussybeanielady@… — 87 Oaklands Park TQ11 0BP N —":
+        - cell "Marshall"
+        - cell "Christine"
+        - cell "chrussybeanielady@…":
+          - link "chrussybeanielady@…":
+            - /url: mailto:chrussybeanielady@yahoo.co.uk
+        - cell "—"
+        - cell "87 Oaklands Park"
+        - cell "TQ11 0BP"
+        - cell "N"
+        - cell "—"
+      - row "Morris John johnmorris218@btin… — 1 St John Cottages TQ13 9BE EX 2026-07-03":
+        - cell "Morris"
+        - cell "John"
+        - cell "johnmorris218@btin…":
+          - link "johnmorris218@btin…":
+            - /url: mailto:johnmorris218@btinternet.com
+        - cell "—"
+        - cell "1 St John Cottages"
+        - cell "TQ13 9BE"
+        - cell "EX"
+        - cell "2026-07-03"
+      - row "Morris Tom morris_family_01@c… — 1 Decoy Road TQ12 1DY F 2026-01-05":
+        - cell "Morris"
+        - cell "Tom"
+        - cell "morris_family_01@c…":
+          - link "morris_family_01@c…":
+            - /url: mailto:morris_family_01@cloud.com
+        - cell "—"
+        - cell "1 Decoy Road"
+        - cell "TQ12 1DY"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Murphy Geraldine glmurphy110@gmail.… — — — NL —":
+        - cell "Murphy"
+        - cell "Geraldine"
+        - cell "glmurphy110@gmail.…":
+          - link "glmurphy110@gmail.…":
+            - /url: mailto:glmurphy110@gmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Nankivell F — — Apple Trees TQ12 6AQ N —":
+        - cell "Nankivell"
+        - cell "F"
+        - cell "—"
+        - cell "—"
+        - cell "Apple Trees"
+        - cell "TQ12 6AQ"
+        - cell "N"
+        - cell "—"
+      - row "Noakes Beryl satchmohowick@iclo… — 30 West Street TQ13 7DU F 2026-01-05":
+        - cell "Noakes"
+        - cell "Beryl"
+        - cell "satchmohowick@iclo…":
+          - link "satchmohowick@iclo…":
+            - /url: mailto:satchmohowick@icloud.com
+        - cell "—"
+        - cell "30 West Street"
+        - cell "TQ13 7DU"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Norman Joan normanjoan743@gmai… — Nortop TQ13 7EA F 2025-08-19":
+        - cell "Norman"
+        - cell "Joan"
+        - cell "normanjoan743@gmai…":
+          - link "normanjoan743@gmai…":
+            - /url: mailto:normanjoan743@gmail.com
+        - cell "—"
+        - cell "Nortop"
+        - cell "TQ13 7EA"
+        - cell "F"
+        - cell "2025-08-19"
+      - row "Oliver David doliver70@outlook.… — — — F 2025-04-24":
+        - cell "Oliver"
+        - cell "David"
+        - cell "doliver70@outlook.…":
+          - link "doliver70@outlook.…":
+            - /url: mailto:doliver70@outlook.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "F"
+        - cell "2025-04-24"
+      - row "Passmore Robert robpassmore@outloo… — 84 Clifford Avenue TQ12 3NU F 2026-01-05":
+        - cell "Passmore"
+        - cell "Robert"
+        - cell "robpassmore@outloo…":
+          - link "robpassmore@outloo…":
+            - /url: mailto:robpassmore@outlook.com
+        - cell "—"
+        - cell "84 Clifford Avenue"
+        - cell "TQ12 3NU"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Payne Michael mike.payne62@btint… — 4 Park House TQ12 2GZ F 2026-01-05":
+        - cell "Payne"
+        - cell "Michael"
+        - cell "mike.payne62@btint…":
+          - link "mike.payne62@btint…":
+            - /url: mailto:mike.payne62@btinternet.com
+        - cell "—"
+        - cell "4 Park House"
+        - cell "TQ12 2GZ"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Peters Audrey audrey.peters@hotm… — The Barns TQ12 3GP F 2026-01-05":
+        - cell "Peters"
+        - cell "Audrey"
+        - cell "audrey.peters@hotm…":
+          - link "audrey.peters@hotm…":
+            - /url: mailto:audrey.peters@hotmail.co.uk
+        - cell "—"
+        - cell "The Barns"
+        - cell "TQ12 3GP"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Pike John john@pike.me.uk — Dunderdale Lawn TQ12 1EN F 2026-02-06":
+        - cell "Pike"
+        - cell "John"
+        - cell "john@pike.me.uk":
+          - link "john@pike.me.uk":
+            - /url: mailto:john@pike.me.uk
+        - cell "—"
+        - cell "Dunderdale Lawn"
+        - cell "TQ12 1EN"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Prose A aprose53@hotmail.c… — — — NL —":
+        - cell "Prose"
+        - cell "A"
+        - cell "aprose53@hotmail.c…":
+          - link "aprose53@hotmail.c…":
+            - /url: mailto:aprose53@hotmail.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Putz James putz@onetel.net — 19 Matford Avenue EX2 4PL F 2026-07-03":
+        - cell "Putz"
+        - cell "James"
+        - cell "putz@onetel.net":
+          - link "putz@onetel.net":
+            - /url: mailto:putz@onetel.net
+        - cell "—"
+        - cell "19 Matford Avenue"
+        - cell "EX2 4PL"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Reed D — — Hay Cottage TQ12 5TZ A —":
+        - cell "Reed"
+        - cell "D"
+        - cell "—"
+        - cell "—"
+        - cell "Hay Cottage"
+        - cell "TQ12 5TZ"
+        - cell "A"
+        - cell "—"
+      - row "Rice Colynne colynnebrooks135@b… — 16 Rendells Meadow TQ13 9QW A 2026-02-06":
+        - cell "Rice"
+        - cell "Colynne"
+        - cell "colynnebrooks135@b…":
+          - link "colynnebrooks135@b…":
+            - /url: mailto:colynnebrooks135@btinternet.com
+        - cell "—"
+        - cell "16 Rendells Meadow"
+        - cell "TQ13 9QW"
+        - cell "A"
+        - cell "2026-02-06"
+      - row "Richards John Harvey j.harvey.richards@… — Tamara TQ13 9BJ F 2026-07-03":
+        - cell "Richards"
+        - cell "John Harvey"
+        - cell "j.harvey.richards@…":
+          - link "j.harvey.richards@…":
+            - /url: mailto:j.harvey.richards@gmail.com
+        - cell "—"
+        - cell "Tamara"
+        - cell "TQ13 9BJ"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Roberts Patricia mjm4549@hotmail.co… — 25 Summerfield Roa… TQ2 7DL F —":
+        - cell "Roberts"
+        - cell "Patricia"
+        - cell "mjm4549@hotmail.co…":
+          - link "mjm4549@hotmail.co…":
+            - /url: mailto:mjm4549@hotmail.co.uk
+        - cell "—"
+        - cell "25 Summerfield Roa…"
+        - cell "TQ2 7DL"
+        - cell "F"
+        - cell "—"
+      - row "Rockey John john.rockey46@gmai… — 25 St Columba Clos… TQ12 3RL F 2026-07-03":
+        - cell "Rockey"
+        - cell "John"
+        - cell "john.rockey46@gmai…":
+          - link "john.rockey46@gmai…":
+            - /url: mailto:john.rockey46@gmail.com
+        - cell "—"
+        - cell "25 St Columba Clos…"
+        - cell "TQ12 3RL"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Roscoe and Mr D Ew… Rosemary rgr@btinternet.com — 15 Becket Road TQ13 9JB F 2026-01-05":
+        - cell "Roscoe and Mr D Ew…"
+        - cell "Rosemary"
+        - cell "rgr@btinternet.com":
+          - link "rgr@btinternet.com":
+            - /url: mailto:rgr@btinternet.com
+        - cell "—"
+        - cell "15 Becket Road"
+        - cell "TQ13 9JB"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Rowe Patricia eileenrowe@yahoo.c… — 9 Wembury Drive TQ2 8DT F 2026-01-05":
+        - cell "Rowe"
+        - cell "Patricia"
+        - cell "eileenrowe@yahoo.c…":
+          - link "eileenrowe@yahoo.c…":
+            - /url: mailto:eileenrowe@yahoo.com
+        - cell "—"
+        - cell "9 Wembury Drive"
+        - cell "TQ2 8DT"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Rumford M unknown@example.co… — — — — —":
+        - cell "Rumford"
+        - cell "M"
+        - cell "unknown@example.co…":
+          - link "unknown@example.co…":
+            - /url: mailto:unknown@example.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Sachs Ann sachs@continentalc… +447877291155 Cleedon House TQ12 1LR F 2025-09-01":
+        - cell "Sachs"
+        - cell "Ann"
+        - cell "sachs@continentalc…":
+          - link "sachs@continentalc…":
+            - /url: mailto:sachs@continentalconnections.co.uk
+        - cell "+447877291155":
+          - link "+447877291155":
+            - /url: tel:+447877291155
+        - cell "Cleedon House"
+        - cell "TQ12 1LR"
+        - cell "F"
+        - cell "2025-09-01"
+      - row "Samways Stephen stephensamways67@g… — 55 St Leonards Roa… TQ12 1JY F 2026-01-05":
+        - cell "Samways"
+        - cell "Stephen"
+        - cell "stephensamways67@g…":
+          - link "stephensamways67@g…":
+            - /url: mailto:stephensamways67@gmail.com
+        - cell "—"
+        - cell "55 St Leonards Roa…"
+        - cell "TQ12 1JY"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Saunders Roger rogerlsaunders@gma… +441803862035 Haytor TQ9 5LH F 2025-09-16":
+        - cell "Saunders"
+        - cell "Roger"
+        - cell "rogerlsaunders@gma…":
+          - link "rogerlsaunders@gma…":
+            - /url: mailto:rogerlsaunders@gmail.com
+        - cell "+441803862035":
+          - link "+441803862035":
+            - /url: tel:+441803862035
+        - cell "Haytor"
+        - cell "TQ9 5LH"
+        - cell "F"
+        - cell "2025-09-16"
+      - row "Scott Jennifer — — 7 Luxton Road TQ12 6YQ A —":
+        - cell "Scott"
+        - cell "Jennifer"
+        - cell "—"
+        - cell "—"
+        - cell "7 Luxton Road"
+        - cell "TQ12 6YQ"
+        - cell "A"
+        - cell "—"
+      - row "Sercombe A anne.sercombe@tisc… — Elm Cottage TQ12 5NZ — —":
+        - cell "Sercombe"
+        - cell "A"
+        - cell "anne.sercombe@tisc…":
+          - link "anne.sercombe@tisc…":
+            - /url: mailto:anne.sercombe@tiscali.co.uk
+        - cell "—"
+        - cell "Elm Cottage"
+        - cell "TQ12 5NZ"
+        - cell "—"
+        - cell "—"
+      - row "Sesterhenn Jane janeandpeter@t-onl… — 3 Buckland Heights TQ12 4FA F 2026-04-29":
+        - cell "Sesterhenn"
+        - cell "Jane"
+        - cell "janeandpeter@t-onl…":
+          - link "janeandpeter@t-onl…":
+            - /url: mailto:janeandpeter@t-online.de
+        - cell "—"
+        - cell "3 Buckland Heights"
+        - cell "TQ12 4FA"
+        - cell "F"
+        - cell "2026-04-29"
+      - row "Shields Ian — — Hensford Farm EX7 0QT A —":
+        - cell "Shields"
+        - cell "Ian"
+        - cell "—"
+        - cell "—"
+        - cell "Hensford Farm"
+        - cell "EX7 0QT"
+        - cell "A"
+        - cell "—"
+      - row "Smith Keith keith89smith@gmail… — 25 Waverley Road TQ12 2ND F 2026-02-06":
+        - cell "Smith"
+        - cell "Keith"
+        - cell "keith89smith@gmail…":
+          - link "keith89smith@gmail…":
+            - /url: mailto:keith89smith@gmail.com
+        - cell "—"
+        - cell "25 Waverley Road"
+        - cell "TQ12 2ND"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Stanley Peter — — Meadow House TQ13 9DL A —":
+        - cell "Stanley"
+        - cell "Peter"
+        - cell "—"
+        - cell "—"
+        - cell "Meadow House"
+        - cell "TQ13 9DL"
+        - cell "A"
+        - cell "—"
+      - row "Stinton Pennie penniestinton@iclo… — 27 The Priory TQ12 5PP F 2025-08-14":
+        - cell "Stinton"
+        - cell "Pennie"
+        - cell "penniestinton@iclo…":
+          - link "penniestinton@iclo…":
+            - /url: mailto:penniestinton@icloud.com
+        - cell "—"
+        - cell "27 The Priory"
+        - cell "TQ12 5PP"
+        - cell "F"
+        - cell "2025-08-14"
+      - row "Stokes-Smith Keith unknown4@example.c… — — — — —":
+        - cell "Stokes-Smith"
+        - cell "Keith"
+        - cell "unknown4@example.c…":
+          - link "unknown4@example.c…":
+            - /url: mailto:unknown4@example.com
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Stokes-Smith Keith — — Wick Episcopi WR2 5SY A —":
+        - cell "Stokes-Smith"
+        - cell "Keith"
+        - cell "—"
+        - cell "—"
+        - cell "Wick Episcopi"
+        - cell "WR2 5SY"
+        - cell "A"
+        - cell "—"
+      - row "Stuckey Lesley lesley.stuckey@hot… — Rancliffe TQ1 3LD F 2026-01-05":
+        - cell "Stuckey"
+        - cell "Lesley"
+        - cell "lesley.stuckey@hot…":
+          - link "lesley.stuckey@hot…":
+            - /url: mailto:lesley.stuckey@hotmail.co.uk
+        - cell "—"
+        - cell "Rancliffe"
+        - cell "TQ1 3LD"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Sykes S sarahanddonaldsyke… — 32 Parkelands TQ13 9BJ — —":
+        - cell "Sykes"
+        - cell "S"
+        - cell "sarahanddonaldsyke…":
+          - link "sarahanddonaldsyke…":
+            - /url: mailto:sarahanddonaldsykes@gmail.com
+        - cell "—"
+        - cell "32 Parkelands"
+        - cell "TQ13 9BJ"
+        - cell "—"
+        - cell "—"
+      - row "Taylor Gillian paulgilltaylor@bti… — 20 Barn Court Road TQ9 6GS F 2026-07-03":
+        - cell "Taylor"
+        - cell "Gillian"
+        - cell "paulgilltaylor@bti…":
+          - link "paulgilltaylor@bti…":
+            - /url: mailto:paulgilltaylor@btinternet.com
+        - cell "—"
+        - cell "20 Barn Court Road"
+        - cell "TQ9 6GS"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Taylor Lucy lucy.taylor1@gmail… — 23 Indio Road TQ13 9BT N —":
+        - cell "Taylor"
+        - cell "Lucy"
+        - cell "lucy.taylor1@gmail…":
+          - link "lucy.taylor1@gmail…":
+            - /url: mailto:lucy.taylor1@gmail.com
+        - cell "—"
+        - cell "23 Indio Road"
+        - cell "TQ13 9BT"
+        - cell "N"
+        - cell "—"
+      - row "Team Flycart support@flycart.or… — — — — —":
+        - cell "Team"
+        - cell "Flycart"
+        - cell "support@flycart.or…":
+          - link "support@flycart.or…":
+            - /url: mailto:support@flycart.org
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Team Flycart support@notify.fly… — — — — —":
+        - cell "Team"
+        - cell "Flycart"
+        - cell "support@notify.fly…":
+          - link "support@notify.fly…":
+            - /url: mailto:support@notify.flycart.org
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "—"
+      - row "Thompson Elizabeth lizt1942@gmail.com — 1 Humber Lane TQ12 3DJ N 2025-03-13":
+        - cell "Thompson"
+        - cell "Elizabeth"
+        - cell "lizt1942@gmail.com":
+          - link "lizt1942@gmail.com":
+            - /url: mailto:lizt1942@gmail.com
+        - cell "—"
+        - cell "1 Humber Lane"
+        - cell "TQ12 3DJ"
+        - cell "N"
+        - cell "2025-03-13"
+      - row "van E Kummer Marina marinavanekummer@h… — — — NL —":
+        - cell "van E Kummer"
+        - cell "Marina"
+        - cell "marinavanekummer@h…":
+          - link "marinavanekummer@h…":
+            - /url: mailto:marinavanekummer@hotmail.co.uk
+        - cell "—"
+        - cell "—"
+        - cell "—"
+        - cell "NL"
+        - cell "—"
+      - row "Vincent Patrick pvincent9999@yahoo… +447989345154 37 Castlewood Aven… TQ12 1NY F 2025-09-04":
+        - cell "Vincent"
+        - cell "Patrick"
+        - cell "pvincent9999@yahoo…":
+          - link "pvincent9999@yahoo…":
+            - /url: mailto:pvincent9999@yahoo.co.uk
+        - cell "+447989345154":
+          - link "+447989345154":
+            - /url: tel:+447989345154
+        - cell "37 Castlewood Aven…"
+        - cell "TQ12 1NY"
+        - cell "F"
+        - cell "2025-09-04"
+      - row "Vizor Alan — — 20 Newcross Park TQ12 3TJ A —":
+        - cell "Vizor"
+        - cell "Alan"
+        - cell "—"
+        - cell "—"
+        - cell "20 Newcross Park"
+        - cell "TQ12 3TJ"
+        - cell "A"
+        - cell "—"
+      - row "Walter Keith keith@tangletrees.… — Tangletrees TQ12 1HL F 2026-02-06":
+        - cell "Walter"
+        - cell "Keith"
+        - cell "keith@tangletrees.…":
+          - link "keith@tangletrees.…":
+            - /url: mailto:keith@tangletrees.co.uk
+        - cell "—"
+        - cell "Tangletrees"
+        - cell "TQ12 1HL"
+        - cell "F"
+        - cell "2026-02-06"
+      - row "Welch Valerie david.welch40@gmai… — 4 Swanborough Road TQ12 4JN F 2025-09-09":
+        - cell "Welch"
+        - cell "Valerie"
+        - cell "david.welch40@gmai…":
+          - link "david.welch40@gmai…":
+            - /url: mailto:david.welch40@gmail.com
+        - cell "—"
+        - cell "4 Swanborough Road"
+        - cell "TQ12 4JN"
+        - cell "F"
+        - cell "2025-09-09"
+      - row "White Mary maryanded@hotmail.… — Westlands TQ12 1LS F 2026-08-06":
+        - cell "White"
+        - cell "Mary"
+        - cell "maryanded@hotmail.…":
+          - link "maryanded@hotmail.…":
+            - /url: mailto:maryanded@hotmail.co.uk
+        - cell "—"
+        - cell "Westlands"
+        - cell "TQ12 1LS"
+        - cell "F"
+        - cell "2026-08-06"
+      - row "White Philip gallicarc@gmail.co… — 4 Thurlestone Road TQ12 2NJ F 2026-07-03":
+        - cell "White"
+        - cell "Philip"
+        - cell "gallicarc@gmail.co…":
+          - link "gallicarc@gmail.co…":
+            - /url: mailto:gallicarc@gmail.com
+        - cell "—"
+        - cell "4 Thurlestone Road"
+        - cell "TQ12 2NJ"
+        - cell "F"
+        - cell "2026-07-03"
+      - row "Wildgoose Joanne jowildgoose@hotmai… — Endsleigh House TQ12 5RJ F 2026-01-05":
+        - cell "Wildgoose"
+        - cell "Joanne"
+        - cell "jowildgoose@hotmai…":
+          - link "jowildgoose@hotmai…":
+            - /url: mailto:jowildgoose@hotmail.co.uk
+        - cell "—"
+        - cell "Endsleigh House"
+        - cell "TQ12 5RJ"
+        - cell "F"
+        - cell "2026-01-05"
+      - row "Wilson Jennifer highcroft46@talkta… — 46 Seymour Road TQ12 2PU F 2026-01-04":
+        - cell "Wilson"
+        - cell "Jennifer"
+        - cell "highcroft46@talkta…":
+          - link "highcroft46@talkta…":
+            - /url: mailto:highcroft46@talktalk.net
+        - cell "—"
+        - cell "46 Seymour Road"
+        - cell "TQ12 2PU"
+        - cell "F"
+        - cell "2026-01-04"
+      - row "Winckles J D dandswinckles@talk… — Colehayes Lodge TQ13 9LD — 2026-07-03":
+        - cell "Winckles"
+        - cell "J D"
+        - cell "dandswinckles@talk…":
+          - link "dandswinckles@talk…":
+            - /url: mailto:dandswinckles@talktalk.net
+        - cell "—"
+        - cell "Colehayes Lodge"
+        - cell "TQ13 9LD"
+        - cell "—"
+        - cell "2026-07-03"
+      - row "Womack R rogerwwomack@gmail… — Bulland Court TQ13 7NG — —":
+        - cell "Womack"
+        - cell "R"
+        - cell "rogerwwomack@gmail…":
+          - link "rogerwwomack@gmail…":
+            - /url: mailto:rogerwwomack@gmail.com
+        - cell "—"
+        - cell "Bulland Court"
+        - cell "TQ13 7NG"
+        - cell "—"
+        - cell "—"
+  - paragraph: "Tip: Click on a contact to edit, or Ctrl/Cmd+click to open in a new tab"
+- alert
+```

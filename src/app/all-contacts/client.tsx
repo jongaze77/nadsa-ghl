@@ -350,11 +350,16 @@ export default function ContactsClient() {
   }
 
   function handleRowClick(contact: any, event: React.MouseEvent) {
+    console.log('🔵 [ROW] Row clicked for contact:', contact.id, contact.firstName, contact.lastName);
+    
     // CTRL/cmd-click opens edit in new tab
     if (event.ctrlKey || event.metaKey) {
+      console.log('🔵 [ROW] CTRL/CMD click detected - opening in new tab');
       window.open(`/contacts/${contact.id}`, '_blank');
       return;
     }
+    
+    console.log('🔵 [ROW] Setting selectedContact to open modal');
     setSelectedContact(contact);
   }
 

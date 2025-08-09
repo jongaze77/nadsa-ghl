@@ -134,7 +134,7 @@ export async function POST(
       body: content.trim(),
     };
 
-    const response = await fetchWithRetry(
+    const response = await fetch(
       `https://rest.gohighlevel.com/v1/contacts/${contactId}/notes`,
       {
         method: 'POST',

@@ -211,10 +211,15 @@ export async function updateMembershipStatus(
     tags.push(`Payment-£${paymentAmount}`);
   }
 
-  const updatePayload = {
-    customFields,
+  // Use the same format as the frontend: customField (singular) as an object
+  const updatePayload: any = {
     tags,
   };
+  
+  // If we have custom fields to update, use the customField format (same as frontend)
+  if (Object.keys(customFields).length > 0) {
+    updatePayload.customField = customFields;
+  }
 
   console.log(`[GHL-API] Sending update payload:`, JSON.stringify(updatePayload, null, 2));
 

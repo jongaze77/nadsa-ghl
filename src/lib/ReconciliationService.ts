@@ -273,12 +273,15 @@ export class ReconciliationService {
     const membershipValidation = this.validateMembershipPayment(currentContact, paymentData);
     console.log(`[ReconciliationService] Membership validation:`, membershipValidation);
     
-    // Step 3: Calculate new renewal date (payment date + 1 year)
-    const newRenewalDate = new Date(paymentData.paymentDate);
-    newRenewalDate.setFullYear(newRenewalDate.getFullYear() + 1);
-    console.log(`[ReconciliationService] Calculated renewal date: ${newRenewalDate.toISOString().split('T')[0]} (payment date + 1 year)`);
+    // Step 3: Calculate new renewal date using smart logic (never go backwards)
+    const newRenewalDate = this.calculateSmartRenewalDate(paymentData.paymentDate, currentContact.renewalDate);
+    console.log(`[ReconciliationService] Calculated renewal date: ${newRenewalDate.toISOString().split('T')[0]}`);
     
-    // Step 4: Update membership status and renewal date
+    // Step 4: Update local database Contact table with new renewal date
+    console.log(`[ReconciliationService] Updating local Contact table renewal_date for ${contactId}`);
+    await this.updateContactRenewalDate(contactId, newRenewalDate);
+    
+    // Step 5: Update membership status and renewal date in GHL
     const membershipUpdateData: GHLMembershipUpdateData = {
       renewalDate: newRenewalDate,
       membershipStatus: 'active',
@@ -294,7 +297,7 @@ export class ReconciliationService {
       'GHL membership update'
     );
     
-    // Step 5: Add reconciliation note to GHL contact
+    // Step 6: Add reconciliation note to GHL contact
     const noteResult = await this.addReconciliationNote(contactId, paymentData, membershipValidation, newRenewalDate);
     
     return {
@@ -743,6 +746,66 @@ export class ReconciliationService {
       return email;
     } else {
       return 'Unknown Contact';
+    }
+  }
+
+  /**
+   * Update the Contact table renewal_date field and customFields JSON in the database
+   */
+  private async updateContactRenewalDate(contactId: string, renewalDate: Date): Promise<void> {
+    try {
+      const renewalDateString = renewalDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const renewalFieldId = 'cWMPNiNAfReHOumOhBB2'; // GHL renewal_date field ID
+      
+      console.log(`[ReconciliationService] Updating database renewal_date for contact ${contactId} to ${renewalDateString}`);
+      
+      // First, get the current contact to preserve existing customFields
+      const currentContact = await prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { customFields: true }
+      });
+      
+      if (!currentContact) {
+        throw new Error(`Contact ${contactId} not found`);
+      }
+      
+      // Update the customFields JSON to include the new renewal date
+      let updatedCustomFields = currentContact.customFields || {};
+      
+      // Handle both array and object formats of customFields
+      if (Array.isArray(updatedCustomFields)) {
+        // If it's an array format, update or add the renewal date field
+        const existingFieldIndex = updatedCustomFields.findIndex((field: any) => field.id === renewalFieldId);
+        if (existingFieldIndex >= 0) {
+          // Update existing field
+          updatedCustomFields[existingFieldIndex].value = renewalDateString;
+        } else {
+          // Add new field
+          updatedCustomFields.push({ id: renewalFieldId, value: renewalDateString });
+        }
+      } else {
+        // If it's an object format, just set the field
+        updatedCustomFields = {
+          ...updatedCustomFields,
+          [renewalFieldId]: renewalDateString
+        };
+      }
+      
+      // Update both renewal_date field and customFields JSON
+      await prisma.contact.update({
+        where: { id: contactId },
+        data: {
+          renewal_date: renewalDateString,
+          customFields: updatedCustomFields,
+          updatedAt: new Date(), // Update the timestamp
+        }
+      });
+      
+      console.log(`[ReconciliationService] Successfully updated database renewal_date and customFields for contact ${contactId}`);
+      
+    } catch (error) {
+      console.error(`[ReconciliationService] Failed to update database renewal_date for contact ${contactId}:`, error);
+      throw new Error(`Database renewal_date update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

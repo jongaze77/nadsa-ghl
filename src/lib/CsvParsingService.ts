@@ -54,6 +54,15 @@ interface StripeFieldMapping {
   card_address_postal_code: string[];
 }
 
+export interface DateFormatDetection {
+  format: 'UK' | 'US' | 'UNKNOWN';
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  separator: '/' | '-' | 'MIXED';
+  unambiguousDates: number;
+  totalDates: number;
+  reason: string;
+}
+
 export class CsvParsingService {
   private logger: Console;
   private stripeFieldMapping: StripeFieldMapping;
@@ -100,6 +109,20 @@ export class CsvParsingService {
           skipped: 0
         };
       }
+
+      // Extract all date strings for format detection
+      const transactionDateIndex = headers.indexOf('Transaction Date');
+      const dateStrings: string[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = this.parseCsvLine(lines[i]);
+        if (values.length === headers.length && values[transactionDateIndex]) {
+          dateStrings.push(values[transactionDateIndex]);
+        }
+      }
+
+      // Detect date format across entire file
+      const formatDetection = this.detectDateFormat(dateStrings);
+      this.logger.log(`Lloyds Bank CSV date format detection: ${formatDetection.format} (confidence: ${formatDetection.confidence})`);
 
       const data: ParsedPaymentData[] = [];
       const errors: string[] = [];
@@ -153,7 +176,7 @@ export class CsvParsingService {
 
           const parsedData: ParsedPaymentData = {
             transactionFingerprint,
-            paymentDate: this.parseDate(row['Transaction Date']),
+            paymentDate: this.parseDate(row['Transaction Date'], formatDetection),
             amount: creditAmount,
             source: 'BANK_CSV',
             transactionRef: row['Transaction Description'],
@@ -169,6 +192,8 @@ export class CsvParsingService {
           skipped++;
         }
       }
+
+      this.logger.log(`Lloyds Bank CSV parsing completed. Format: ${formatDetection.format}, Confidence: ${formatDetection.confidence}, Processed: ${processed}, Skipped: ${skipped}`);
 
       return {
         success: errors.length === 0,
@@ -217,11 +242,6 @@ export class CsvParsingService {
         };
       }
 
-      const data: ParsedPaymentData[] = [];
-      const errors: string[] = [];
-      let processed = 0;
-      let skipped = 0;
-      
       const { 
         idIndex, 
         amountIndex, 
@@ -232,6 +252,24 @@ export class CsvParsingService {
         cardAddressLine1Index,
         cardAddressPostalCodeIndex
       } = headerMapping.mapping!;
+
+      // Extract all date strings for format detection (Stripe typically uses ISO format)
+      const dateStrings: string[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = this.parseCsvLine(lines[i]);
+        if (values.length === headers.length && values[createdIndex]) {
+          dateStrings.push(values[createdIndex]);
+        }
+      }
+
+      // Detect date format across entire file
+      const formatDetection = this.detectDateFormat(dateStrings);
+      this.logger.log(`Stripe CSV date format detection: ${formatDetection.format} (confidence: ${formatDetection.confidence})`);
+
+      const data: ParsedPaymentData[] = [];
+      const errors: string[] = [];
+      let processed = 0;
+      let skipped = 0;
 
       for (let i = 1; i < lines.length; i++) {
         try {
@@ -277,7 +315,7 @@ export class CsvParsingService {
 
           const parsedData: ParsedPaymentData = {
             transactionFingerprint,
-            paymentDate: new Date(createdStr),
+            paymentDate: this.parseDate(createdStr, formatDetection),
             amount,
             source: 'STRIPE_REPORT',
             transactionRef: id,
@@ -296,6 +334,8 @@ export class CsvParsingService {
           skipped++;
         }
       }
+
+      this.logger.log(`Stripe CSV parsing completed. Format: ${formatDetection.format}, Confidence: ${formatDetection.confidence}, Processed: ${processed}, Skipped: ${skipped}`);
 
       return {
         success: errors.length === 0,
@@ -445,7 +485,212 @@ export class CsvParsingService {
     return createHash('sha256').update(combined).digest('hex');
   }
 
-  private parseDate(dateString: string): Date {
+  /**
+   * Detects the date format across all date values in a CSV to determine UK vs US format
+   * @param dateStrings Array of date strings to analyze
+   * @returns DateFormatDetection with format, confidence, and analysis details
+   */
+  private detectDateFormat(dateStrings: string[]): DateFormatDetection {
+    const validDateStrings = dateStrings.filter(date => date && date.trim());
+    
+    if (validDateStrings.length === 0) {
+      return {
+        format: 'UNKNOWN',
+        confidence: 'LOW',
+        separator: '/',
+        unambiguousDates: 0,
+        totalDates: 0,
+        reason: 'No valid date strings provided'
+      };
+    }
+
+    let ukIndicators = 0;
+    let usIndicators = 0;
+    let unambiguousDates = 0;
+    let slashSeparators = 0;
+    let dashSeparators = 0;
+    let isoFormatCount = 0;
+
+    this.logger.log(`Analyzing ${validDateStrings.length} date strings for format detection`);
+
+    for (const dateString of validDateStrings) {
+      const trimmed = dateString.trim();
+      
+      // Skip ISO format dates (yyyy-mm-dd)
+      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(trimmed)) {
+        isoFormatCount++;
+        continue;
+      }
+
+      // Check for dd/mm/yyyy or dd-mm-yyyy patterns
+      const dateMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dateMatch) {
+        const [fullMatch, first, second] = dateMatch;
+        const firstNum = parseInt(first, 10);
+        const secondNum = parseInt(second, 10);
+        
+        // Count separators
+        if (fullMatch.includes('/')) slashSeparators++;
+        if (fullMatch.includes('-')) dashSeparators++;
+
+        // Unambiguous UK format: day > 12
+        if (firstNum > 12 && secondNum >= 1 && secondNum <= 12) {
+          ukIndicators++;
+          unambiguousDates++;
+          this.logger.log(`UK format detected (day > 12): ${trimmed} -> day=${firstNum}, month=${secondNum}`);
+        }
+        // Unambiguous US format: month > 12
+        else if (secondNum > 12 && firstNum >= 1 && firstNum <= 12) {
+          usIndicators++;
+          unambiguousDates++;
+          this.logger.log(`US format detected (month > 12): ${trimmed} -> month=${firstNum}, day=${secondNum}`);
+        }
+        // Both numbers <= 12, ambiguous
+        else if (firstNum >= 1 && firstNum <= 12 && secondNum >= 1 && secondNum <= 12) {
+          // This is ambiguous, can't determine format from this date alone
+          this.logger.log(`Ambiguous date format: ${trimmed} -> could be ${firstNum}/${secondNum} (both ≤12)`);
+        }
+      }
+    }
+
+    // Determine separator type
+    let separator: '/' | '-' | 'MIXED' = '/';
+    if (dashSeparators > 0 && slashSeparators === 0) {
+      separator = '-';
+    } else if (dashSeparators > 0 && slashSeparators > 0) {
+      separator = 'MIXED';
+    }
+
+    // Determine format based on unambiguous indicators
+    let format: 'UK' | 'US' | 'UNKNOWN' = 'UNKNOWN';
+    let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+    let reason = '';
+
+    if (ukIndicators > 0 && usIndicators === 0) {
+      format = 'UK';
+      confidence = ukIndicators >= 3 ? 'HIGH' : ukIndicators >= 2 ? 'MEDIUM' : 'LOW';
+      reason = `${ukIndicators} unambiguous UK dates found (day > 12)`;
+    } else if (usIndicators > 0 && ukIndicators === 0) {
+      format = 'US';
+      confidence = usIndicators >= 3 ? 'HIGH' : usIndicators >= 2 ? 'MEDIUM' : 'LOW';
+      reason = `${usIndicators} unambiguous US dates found (month > 12)`;
+    } else if (ukIndicators === 0 && usIndicators === 0) {
+      // All dates are ambiguous or ISO format
+      if (isoFormatCount === validDateStrings.length) {
+        format = 'US'; // ISO dates can be parsed directly
+        confidence = 'HIGH';
+        reason = `All ${isoFormatCount} dates are ISO format (yyyy-mm-dd)`;
+      } else {
+        format = 'UK'; // Default to UK format when ambiguous (backwards compatibility requirement)
+        confidence = 'LOW';
+        reason = 'All dates ambiguous (both day/month ≤12), defaulting to UK format for backwards compatibility';
+      }
+    } else {
+      // Conflicting indicators
+      format = ukIndicators > usIndicators ? 'UK' : 'US';
+      confidence = 'LOW';
+      reason = `Conflicting indicators: ${ukIndicators} UK, ${usIndicators} US - choosing ${format}`;
+    }
+
+    const result: DateFormatDetection = {
+      format,
+      confidence,
+      separator,
+      unambiguousDates,
+      totalDates: validDateStrings.length,
+      reason
+    };
+
+    this.logger.log(`Date format detection result:`, JSON.stringify(result, null, 2));
+    return result;
+  }
+
+  /**
+   * Parses a date string using the predetermined format from detectDateFormat
+   * @param dateString The date string to parse
+   * @param formatDetection The detected format information from detectDateFormat
+   * @returns Parsed Date object
+   */
+  private parseDate(dateString: string, formatDetection?: DateFormatDetection): Date {
+    const trimmed = dateString.trim();
+    
+    // If no format detection provided, fall back to the old behavior for backwards compatibility
+    if (!formatDetection) {
+      return this.parseDate_Legacy(trimmed);
+    }
+
+    // First try standard parsing (works for ISO dates and some unambiguous formats)
+    let date = new Date(trimmed);
+    
+    // If standard parsing works and format is US or ISO, we're done
+    if (!isNaN(date.getTime()) && (formatDetection.format === 'US' || trimmed.match(/^\d{4}-\d{1,2}-\d{1,2}/))) {
+      return date;
+    }
+
+    // Parse based on detected format
+    const dateMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dateMatch) {
+      const [, first, second, year] = dateMatch;
+      let day: string, month: string;
+
+      if (formatDetection.format === 'UK') {
+        // UK format: dd/mm/yyyy
+        day = first;
+        month = second;
+        this.logger.log(`Parsing as UK date: ${trimmed} -> day=${day}, month=${month}, year=${year}`);
+      } else if (formatDetection.format === 'US') {
+        // US format: mm/dd/yyyy
+        month = first;
+        day = second;
+        this.logger.log(`Parsing as US date: ${trimmed} -> month=${month}, day=${day}, year=${year}`);
+      } else {
+        // UNKNOWN format, default to UK for backwards compatibility
+        day = first;
+        month = second;
+        this.logger.log(`Parsing as UK date (unknown format fallback): ${trimmed} -> day=${day}, month=${month}, year=${year}`);
+      }
+
+      // Validate day and month ranges
+      const dayNum = parseInt(day, 10);
+      const monthNum = parseInt(month, 10);
+      const yearNum = parseInt(year, 10);
+
+      if (dayNum < 1 || dayNum > 31) {
+        throw new Error(`Invalid day: ${day} in date ${trimmed} (detected format: ${formatDetection.format})`);
+      }
+      if (monthNum < 1 || monthNum > 12) {
+        throw new Error(`Invalid month: ${month} in date ${trimmed} (detected format: ${formatDetection.format})`);
+      }
+      if (yearNum < 1900 || yearNum > 2100) {
+        throw new Error(`Invalid year: ${year} in date ${trimmed} (detected format: ${formatDetection.format})`);
+      }
+
+      // Create date in US format for JavaScript Date constructor (mm/dd/yyyy)
+      const usFormatForConstructor = `${month}/${day}/${year}`;
+      date = new Date(usFormatForConstructor);
+      
+      if (isNaN(date.getTime())) {
+        throw new Error(`Failed to parse date: ${trimmed} (detected format: ${formatDetection.format}, converted to: ${usFormatForConstructor})`);
+      }
+
+      this.logger.log(`Successfully parsed date: ${trimmed} -> ${date.toISOString()} (format: ${formatDetection.format})`);
+      return date;
+    }
+
+    // If we get here, try the standard parsing one more time
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+
+    throw new Error(`Invalid date format: ${trimmed} (detected format: ${formatDetection.format}, reason: ${formatDetection.reason})`);
+  }
+
+  /**
+   * Legacy parseDate method for backwards compatibility
+   * @param dateString The date string to parse
+   * @returns Parsed Date object
+   */
+  private parseDate_Legacy(dateString: string): Date {
     // First try standard parsing
     let date = new Date(dateString);
     

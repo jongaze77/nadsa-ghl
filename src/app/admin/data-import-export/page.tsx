@@ -16,6 +16,8 @@ export default function DataImportExportPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportPreview, setExportPreview] = useState<ExportPreview | null>(null);
+  const [mailmergeExporting, setMailmergeExporting] = useState(false);
+  const [mailmergeExportPreview, setMailmergeExportPreview] = useState<ExportPreview | null>(null);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
 
@@ -30,8 +32,9 @@ export default function DataImportExportPage() {
       return;
     }
     
-    // Load export preview on page load
+    // Load export previews on page load
     loadExportPreview();
+    loadMailmergeExportPreview();
   }, [session, router]);
 
   const loadExportPreview = async () => {
@@ -51,6 +54,23 @@ export default function DataImportExportPage() {
       setError(err.message || 'Failed to load export preview');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMailmergeExportPreview = async () => {
+    try {
+      const response = await fetch('/api/admin/export/mailmerge-data?preview=true');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load mailmerge export preview');
+      }
+      
+      const data = await response.json();
+      setMailmergeExportPreview(data);
+    } catch (err: any) {
+      console.error('Error loading mailmerge export preview:', err);
+      // Don't set error state here to avoid overriding other errors
     }
   };
 
@@ -84,6 +104,39 @@ export default function DataImportExportPage() {
       setError(err.message || 'Export failed');
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleMailmergeExport = async () => {
+    try {
+      setMailmergeExporting(true);
+      setError('');
+      setSuccess('');
+      
+      const response = await fetch('/api/admin/export/mailmerge-data');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Mailmerge export failed');
+      }
+      
+      // Create blob from response and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mailmerge-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess(`Successfully exported ${mailmergeExportPreview?.count || 0} contacts to mailmerge CSV file`);
+    } catch (err: any) {
+      console.error('Mailmerge export error:', err);
+      setError(err.message || 'Mailmerge export failed');
+    } finally {
+      setMailmergeExporting(false);
     }
   };
 
@@ -273,6 +326,122 @@ export default function DataImportExportPage() {
                     <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">No Records to Export</h4>
                     <p className="text-sm text-yellow-700 dark:text-yellow-400">
                       No contacts currently match the export criteria. Check that you have Full members with current renewal dates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mailmerge Data Export Card */}
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                Mailmerge Data Export
+              </h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                CSV Format
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Export Criteria</h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <li className="flex items-center">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Membership Type = &quot;Full&quot; OR &quot;Associate&quot;
+                </li>
+                <li className="flex items-center">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Includes complete address information
+                </li>
+              </ul>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Export Format</h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="mb-2">CSV file with columns: title, initial, first_name, last_name, address_line_1, address_line_2, address_line_3, city, state, postal_code, country, membership_type, single_or_double, renewal_date</p>
+                <p>Designed for physical mailing and mailmerge operations with complete contact and address data. Data is sorted by last name, then first name.</p>
+              </div>
+            </div>
+
+            {/* Mailmerge Export Preview */}
+            {mailmergeExportPreview && (
+              <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <h4 className="text-sm font-medium text-green-900 dark:text-green-300">Ready for Mailmerge Export</h4>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      {mailmergeExportPreview.count} contact{mailmergeExportPreview.count !== 1 ? 's' : ''} match{mailmergeExportPreview.count === 1 ? 'es' : ''} the mailmerge export criteria
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mailmerge Export Button */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleMailmergeExport}
+                disabled={mailmergeExporting || !mailmergeExportPreview || mailmergeExportPreview.count === 0}
+                className={`inline-flex items-center px-4 py-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  mailmergeExporting || !mailmergeExportPreview || mailmergeExportPreview.count === 0
+                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500'
+                }`}
+              >
+                {mailmergeExporting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating Mailmerge Export...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Mailmerge CSV
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={loadMailmergeExportPreview}
+                disabled={mailmergeExporting}
+                className="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Mailmerge Preview
+              </button>
+            </div>
+
+            {mailmergeExportPreview && mailmergeExportPreview.count === 0 && (
+              <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.867-.833-2.636 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">No Records to Export</h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                      No contacts currently match the mailmerge export criteria. Check that you have Full or Associate members with complete address information.
                     </p>
                   </div>
                 </div>

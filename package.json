@@ -13,6 +13,11 @@
     "test:e2e": "playwright test tests/playwright/",
     "sync-contacts": "ts-node src/scripts/sync-contacts.ts",
     "list-ghl-fields": "ts-node src/scripts/list-ghl-custom-fields.ts",
+    "clear-renewal-dates": "ts-node src/scripts/clear-renewal-dates.ts",
+    "test-renewal-update": "ts-node src/scripts/test-renewal-date-update.ts",
+    "sync-renewal-dates-from-json": "ts-node src/scripts/sync-renewal-dates-from-json.ts",
+    "sync-renewal-dates-from-ghl": "ts-node src/scripts/sync-renewal-dates-from-ghl.ts",
+    "update-renewal-dates-from-reconciliation": "ts-node src/scripts/update-renewal-dates-from-reconciliation.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -182,6 +182,62 @@ describe('CsvParsingService', () => {
       expect(result.data![2].paymentDate.getMonth()).toBe(2); // March
       expect(result.data![2].paymentDate.getDate()).toBe(15);
     });
+
+    it('should detect UK format with high confidence when multiple unambiguous dates present', async () => {
+      const ukDateCsv = `Transaction Date,Transaction Type,Sort Code,Account Number,Transaction Description,Debit Amount,Credit Amount,Balance
+"31/07/2025","Credit","12-34-56","12345678","MEMBERSHIP PAYMENT","","50.00","1000.00"
+"25/12/2025","Credit","12-34-56","12345678","RENEWAL FEE","","75.00","1075.00"
+"30/11/2025","Credit","12-34-56","12345678","ANNUAL FEE","","100.00","1175.00"
+"15/08/2025","Credit","12-34-56","12345678","LATE FEE","","25.00","1200.00"`;
+
+      const result = await service.parseLloydsBankCsv(ukDateCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(4);
+      
+      // Verify dates are parsed correctly as UK format
+      expect(result.data![0].paymentDate.getMonth()).toBe(6); // July (0-indexed)
+      expect(result.data![0].paymentDate.getDate()).toBe(31);
+      
+      expect(result.data![1].paymentDate.getMonth()).toBe(11); // December
+      expect(result.data![1].paymentDate.getDate()).toBe(25);
+      
+      expect(result.data![2].paymentDate.getMonth()).toBe(10); // November
+      expect(result.data![2].paymentDate.getDate()).toBe(30);
+      
+      expect(result.data![3].paymentDate.getMonth()).toBe(7); // August
+      expect(result.data![3].paymentDate.getDate()).toBe(15);
+    });
+
+    it('should handle date format with dash separators', async () => {
+      const dashDateCsv = `Transaction Date,Transaction Type,Sort Code,Account Number,Transaction Description,Debit Amount,Credit Amount,Balance
+"31-07-2025","Credit","12-34-56","12345678","MEMBERSHIP PAYMENT","","50.00","1000.00"
+"25-12-2025","Credit","12-34-56","12345678","RENEWAL FEE","","75.00","1075.00"`;
+
+      const result = await service.parseLloydsBankCsv(dashDateCsv);
+
+      expect(result.success).toBe(true);
+      expect(result.processed).toBe(2);
+      
+      // Verify dates with dash separators are parsed correctly as UK format
+      expect(result.data![0].paymentDate.getMonth()).toBe(6); // July
+      expect(result.data![0].paymentDate.getDate()).toBe(31);
+      
+      expect(result.data![1].paymentDate.getMonth()).toBe(11); // December
+      expect(result.data![1].paymentDate.getDate()).toBe(25);
+    });
+
+    it('should provide enhanced error messages with format detection info', async () => {
+      const invalidDateCsv = `Transaction Date,Transaction Type,Sort Code,Account Number,Transaction Description,Debit Amount,Credit Amount,Balance
+"31/13/2025","Credit","12-34-56","12345678","INVALID MONTH","","50.00","1000.00"`;
+
+      const result = await service.parseLloydsBankCsv(invalidDateCsv);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors![0]).toContain('Invalid month: 13');
+      expect(result.errors![0]).toContain('detected format: UK');
+    });
   });
 
   describe('parseStripeCsv', () => {

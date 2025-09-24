@@ -50,7 +50,9 @@ async function testRenewalDateUpdate(contactId: string, dryRun: boolean = false)
     if (contact.customFields) {
       if (Array.isArray(contact.customFields)) {
         const renewalField = contact.customFields.find((field: any) => field.id === renewalFieldId);
-        customFieldRenewalDate = renewalField?.value || null;
+        if (renewalField && typeof renewalField === 'object' && 'value' in renewalField) {
+          customFieldRenewalDate = renewalField.value as string || null;
+        }
       } else if (typeof contact.customFields === 'object') {
         customFieldRenewalDate = (contact.customFields as any)[renewalFieldId] || null;
       }
@@ -78,15 +80,23 @@ async function testRenewalDateUpdate(contactId: string, dryRun: boolean = false)
         const existingFieldIndex = updatedCustomFields.findIndex((field: any) => field.id === renewalFieldId);
         if (existingFieldIndex >= 0) {
           // Update existing field
-          updatedCustomFields[existingFieldIndex].value = renewalDateString;
+          const existingField = updatedCustomFields[existingFieldIndex] as any;
+          if (existingField && typeof existingField === 'object') {
+            existingField.value = renewalDateString;
+          }
         } else {
           // Add new field
           updatedCustomFields.push({ id: renewalFieldId, value: renewalDateString });
         }
-      } else {
+      } else if (updatedCustomFields && typeof updatedCustomFields === 'object') {
         // If it's an object format, just set the field
         updatedCustomFields = {
-          ...updatedCustomFields,
+          ...(updatedCustomFields as Record<string, any>),
+          [renewalFieldId]: renewalDateString
+        };
+      } else {
+        // Initialize as object if null or undefined
+        updatedCustomFields = {
           [renewalFieldId]: renewalDateString
         };
       }

@@ -778,15 +778,23 @@ export class ReconciliationService {
         const existingFieldIndex = updatedCustomFields.findIndex((field: any) => field.id === renewalFieldId);
         if (existingFieldIndex >= 0) {
           // Update existing field
-          updatedCustomFields[existingFieldIndex].value = renewalDateString;
+          const existingField = updatedCustomFields[existingFieldIndex] as any;
+          if (existingField && typeof existingField === 'object') {
+            existingField.value = renewalDateString;
+          }
         } else {
           // Add new field
           updatedCustomFields.push({ id: renewalFieldId, value: renewalDateString });
         }
-      } else {
+      } else if (updatedCustomFields && typeof updatedCustomFields === 'object') {
         // If it's an object format, just set the field
         updatedCustomFields = {
-          ...updatedCustomFields,
+          ...(updatedCustomFields as Record<string, any>),
+          [renewalFieldId]: renewalDateString
+        };
+      } else {
+        // Initialize as object if null or undefined
+        updatedCustomFields = {
           [renewalFieldId]: renewalDateString
         };
       }

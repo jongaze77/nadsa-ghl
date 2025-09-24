@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import SyncStatusIndicator from './SyncStatusIndicator';
 
 export default function Navigation() {
   const { data: session } = useSession();
@@ -88,8 +89,9 @@ export default function Navigation() {
               )}
             </div>
           </div>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-500 mr-4">
+          <div className="flex items-center space-x-4">
+            <SyncStatusIndicator />
+            <span className="text-sm text-gray-500">
               {session.user.name}
             </span>
             <button

@@ -40,12 +40,16 @@ This is a Next.js 15 application for managing Go High Level (GHL) contacts with 
 ### Database Schema
 - `User`: Authentication with role-based permissions
 - `Contact`: Stores both standard GHL fields and custom fields as JSON
+- `SyncOperation`: Tracks automated sync operations with detailed metrics and status
 - Custom field mapping defined in `FIELD_MAP` in `src/lib/ghl-api.ts`
 
 ### API Architecture
 - `/api/auth/[...nextauth]` - NextAuth endpoints
 - `/api/contacts/*` - Contact CRUD operations
 - `/api/contact/[id]/*` - Individual contact operations
+- `/api/sync/incremental` - Automated hourly incremental sync endpoint (cron)
+- `/api/sync/full` - Automated daily full reconciliation sync endpoint (cron)
+- `/api/sync/status` - Real-time sync status monitoring endpoint
 - `/api/webhooks/ghl-contact-created` - GHL webhook handler
 
 ### Important Files
@@ -64,6 +68,7 @@ ADMIN_PASSWORD=hashed_password
 NEXTAUTH_SECRET=random_secret
 NEXTAUTH_URL=http://localhost:3000
 DATABASE_URL=postgresql_connection_string
+CRON_SECRET=your_cron_secret (optional, for additional auth on cron endpoints)
 ```
 
 ### Custom Field Handling
@@ -72,8 +77,18 @@ DATABASE_URL=postgresql_connection_string
 - Membership type extraction with normalization logic
 - Change tracking for contact updates
 
+### Automated Sync System
+- **Incremental Sync**: Runs hourly via Vercel cron, fetches only contacts modified since last sync using GHL API `updatedAt[gt]` parameter
+- **Full Reconciliation**: Runs daily at 2 AM via Vercel cron, processes all contacts for complete data integrity
+- **Sync Monitoring**: Real-time status indicator in navigation shows sync health (Green/Yellow/Red based on last sync time)
+- **Operation Tracking**: All sync operations logged to `SyncOperation` model with detailed metrics and error tracking
+- **Authentication**: Cron endpoints secured with Vercel user-agent detection and optional `CRON_SECRET` bearer token
+- **Manual Fallback**: Original `npm run sync-contacts` script remains fully functional for manual operations
+
 ### Development Notes
 - TypeScript errors and ESLint errors are ignored during builds (see `next.config.js`)
 - Uses `@/` path alias for `src/` directory
 - Contact sync includes detailed logging for debugging
 - Retry logic implemented for GHL API calls with exponential backoff
+- Vercel cron jobs configured in `vercel.json` for automated sync scheduling
+- Sync status UI component provides detailed operation history and metrics

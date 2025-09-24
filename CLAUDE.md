@@ -85,16 +85,10 @@ CRON_SECRET=your_cron_secret (optional, for additional auth on cron endpoints)
 - **Authentication**: Cron endpoints secured with Vercel user-agent detection and optional `CRON_SECRET` bearer token
 - **Manual Fallback**: Original `npm run sync-contacts` script remains fully functional for manual operations
 
-### Production Deployment Requirements
-- **Vercel Pro Plan**: Required for cron job functionality ($20/month)
-- **Manual Cron Setup**: Create cron jobs in Vercel Dashboard → Settings → Cron Jobs:
-  - `/api/sync/incremental` with schedule `0 * * * *` (hourly)
-  - `/api/sync/full` with schedule `0 2 * * *` (daily at 2 AM)
-- **Environment Variables**: Add `CRON_SECRET=your-secure-random-string` for additional security
-
 ### Development Notes
 - TypeScript errors and ESLint errors are ignored during builds (see `next.config.js`)
 - Uses `@/` path alias for `src/` directory
 - Contact sync includes detailed logging for debugging
 - Retry logic implemented for GHL API calls with exponential backoff
+- Vercel cron jobs configured in `vercel.json` for automated sync scheduling (requires Vercel Pro plan)
 - Sync status UI component provides detailed operation history and metrics

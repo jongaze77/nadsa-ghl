@@ -127,12 +127,32 @@ model ReconciliationLog {
   reconciledByUserId    Int      // Foreign key to User
   contactId             String   // Foreign key to Contact
   metadata              Json?    // Additional transaction context
-  
+
   reconciledBy User    @relation(fields: [reconciledByUserId], references: [id])
   contact      Contact @relation(fields: [contactId], references: [id])
-  
+
   @@index([reconciledByUserId])
   @@index([contactId])
   @@index([reconciledAt])
   @@index([paymentDate, amount]) // Composite index for matching queries
+}
+
+model SyncOperation {
+  id                String   @id @default(cuid())
+  type              String   // 'incremental' or 'full'
+  status            String   // 'running', 'success', 'failed'
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  duration          Int?     // Duration in milliseconds
+  contactsProcessed Int      @default(0)
+  contactsCreated   Int      @default(0)
+  contactsUpdated   Int      @default(0)
+  contactsSkipped   Int      @default(0)
+  errors            Int      @default(0)
+  errorDetails      Json?    // Array of error messages
+  metadata          Json?    // Additional operation context
+
+  @@index([startedAt])
+  @@index([type, status])
+  @@index([completedAt])
 }

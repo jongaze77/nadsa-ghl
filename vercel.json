@@ -3,5 +3,15 @@
     "app/api/**/*.{js,ts}": {
       "runtime": "@vercel/node@3.0.0"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/sync/incremental",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/sync/full",
+      "schedule": "0 2 * * *"
+    }
+  ]
 } 

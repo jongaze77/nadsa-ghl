@@ -446,6 +446,11 @@ function extractCustomFieldValue(ghlContact: any, fieldId: string): string | nul
   return value;
 }
 
+function capitalizeFirstLetter(str: string | null | undefined): string | null {
+  if (!str || typeof str !== 'string') return null;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
   // Support multiple possible sources for id
   const id =
@@ -456,6 +461,7 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
 
   // Use the whole object as the "contact"
   const contact = { ...ghlContact, id };
+
 
   // Extract specific custom fields that we need as separate columns
   const renewalDate = extractCustomFieldValue(ghlContact, 'cWMPNiNAfReHOumOhBB2'); // renewal_date field ID
@@ -488,8 +494,8 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
 
   return {
     id: contact.id,
-    firstName: contact.firstName || contact.first_name || null,
-    lastName: contact.lastName || contact.last_name || null,
+    firstName: capitalizeFirstLetter(contact.firstName || contact.first_name) || null,
+    lastName: capitalizeFirstLetter(contact.lastName || contact.last_name) || null,
     email: contact.email || null,
     phone: contact.phone || null,
     name: contact.name || contact.full_name || null,

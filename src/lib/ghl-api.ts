@@ -415,14 +415,35 @@ function extractCustomFieldValue(ghlContact: any, fieldId: string): string | nul
 
   if (!possibleCF) return null;
 
+  let value: any = null;
+
   if (typeof possibleCF === 'object' && !Array.isArray(possibleCF)) {
-    return possibleCF[fieldId] || null;
+    value = possibleCF[fieldId] || null;
   } else if (Array.isArray(possibleCF)) {
     const field = possibleCF.find((f: any) => f.id === fieldId);
-    return field ? field.value : null;
+    value = field ? field.value : null;
   }
 
-  return null;
+  // Handle Unix timestamp conversion for date fields
+  if (value !== null && typeof value === 'number') {
+    // Check if this is a date field (renewal_date or membership_payment_date)
+    const dateFields = ['cWMPNiNAfReHOumOhBB2', 'XSEdoRxvFAJ6gh8p5Rdw'];
+    if (dateFields.includes(fieldId)) {
+      // Convert Unix timestamp (milliseconds) to ISO date string
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          const dateString = date.toISOString().split('T')[0];
+          console.log(`[GHL-API] Converted Unix timestamp ${value} to date string ${dateString} for field ${fieldId}`);
+          return dateString;
+        }
+      } catch (error) {
+        console.warn(`[GHL-API] Failed to convert timestamp ${value} for field ${fieldId}:`, error);
+      }
+    }
+  }
+
+  return value;
 }
 
 export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
@@ -438,6 +459,32 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
 
   // Extract specific custom fields that we need as separate columns
   const renewalDate = extractCustomFieldValue(ghlContact, 'cWMPNiNAfReHOumOhBB2'); // renewal_date field ID
+
+  // Process customFields array to convert timestamps for date fields
+  const rawCustomFields = contact.customField || contact.customFields || contact.customData || null;
+  let processedCustomFields = rawCustomFields;
+
+  if (Array.isArray(rawCustomFields)) {
+    processedCustomFields = rawCustomFields.map((field: any) => {
+      if (field && typeof field === 'object' && 'id' in field && 'value' in field) {
+        // Convert timestamp values for date fields
+        const dateFields = ['cWMPNiNAfReHOumOhBB2', 'XSEdoRxvFAJ6gh8p5Rdw'];
+        if (dateFields.includes(field.id) && typeof field.value === 'number') {
+          try {
+            const date = new Date(field.value);
+            if (!isNaN(date.getTime())) {
+              const dateString = date.toISOString().split('T')[0];
+              console.log(`[GHL-API] Converted customFields timestamp ${field.value} to date string ${dateString} for field ${field.id}`);
+              return { ...field, value: dateString };
+            }
+          } catch (error) {
+            console.warn(`[GHL-API] Failed to convert customFields timestamp ${field.value} for field ${field.id}:`, error);
+          }
+        }
+      }
+      return field;
+    });
+  }
 
   return {
     id: contact.id,
@@ -457,8 +504,7 @@ export function mapGHLContactToPrisma(ghlContact: any): Partial<Contact> {
     source: contact.source || null,
     tags: contact.tags || [],
     membershipType: extractMembershipType(ghlContact),
-    customFields:
-      contact.customField || contact.customFields || contact.customData || null,
+    customFields: processedCustomFields,
     ghlUpdatedAt: contact.updatedAt
       ? new Date(contact.updatedAt)
       : null,
